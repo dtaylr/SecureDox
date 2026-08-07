@@ -1,0 +1,48 @@
+{
+  "name": "securedox",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SecureDox — AI Reliability TestOps Platform for a regulated document intake workflow",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20",
+    "yarn": ">=1.22"
+  },
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "apps/mcp-test-architect",
+    "packages/shared/ts",
+    "packages/observability/ts",
+    "packages/test-framework",
+    "tests/e2e",
+    "tests/mobile-ui",
+    "tests/architecture"
+  ],
+  "scripts": {
+    "up": "docker compose -f infra/docker/docker-compose.yml up -d --build",
+    "down": "docker compose -f infra/docker/docker-compose.yml down -v",
+    "logs": "docker compose -f infra/docker/docker-compose.yml logs -f",
+    "seed": "docker compose -f infra/docker/docker-compose.yml exec api python -m app.db.seed",
+    "typecheck": "tsc -b tsconfig.build.json",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "test:e2e": "yarn workspace @securedox/e2e-tests test",
+    "test:bdd": "yarn workspace @securedox/e2e-tests test:bdd",
+    "test:mobile:ui": "yarn workspace @securedox/mobile-ui-tests test",
+    "test:arch": "yarn workspace @securedox/architecture-tests test",
+    "contracts:types": "openapi-typescript packages/contracts/openapi/securedox.v1.yaml -o packages/shared/ts/src/generated/api.ts",
+    "gate:release": "tsx scripts/release-readiness.ts",
+    "gate:security": "tsx scripts/security-release-gate.ts",
+    "check:flake": "tsx scripts/check-flake-rate.ts",
+    "check:coverage": "tsx scripts/check-coverage-regression.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "openapi-typescript": "^7.5.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,91 @@
+[project]
+name = "securedox-workspace"
+version = "0.1.0"
+description = "Root tooling config for the SecureDox Python services and test suites"
+requires-python = ">=3.12"
+
+# ---------------------------------------------------------------------------
+# Ruff — lint + format for apps/api, apps/worker, packages/*/python, tests, scripts
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".venv", "node_modules", "apps/api/alembic/versions", "tests/_generated"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "B",        # bugbear
+    "C4",       # comprehensions
+    "S",        # bandit — security lint runs in the same pass as style
+    "T20",      # no stray print()
+    "ASYNC",    # async correctness
+    "RUF",
+]
+ignore = [
+    "E501",   # line length is enforced by the formatter
+    "B008",   # FastAPI Depends() in defaults is the documented idiom
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests assert, use fixed credentials, and print diagnostics on purpose.
+"tests/**" = ["S101", "S105", "S106", "T20"]
+"apps/*/tests/**" = ["S101", "S105", "S106", "T20"]
+"scripts/**" = ["T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "worker", "securedox_shared", "securedox_observability"]
+
+# ---------------------------------------------------------------------------
+# Pytest — one config for every Python suite in the repo
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["apps/api/tests", "apps/worker/tests", "tests"]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "integration: needs the docker-compose stack running",
+    "contract: verifies a published contract (OpenAPI / queue schema / Pact)",
+    "db: asserts database rules, constraints or data integrity",
+    "security: an authz, header or input-validation security test",
+    "mobile: mobile-specific API behaviour",
+    "slow: excluded from the pre-merge fast lane",
+    "generated: authored by the AI test architect, pending human approval",
+]
+filterwarnings = ["error::DeprecationWarning:app.*", "error::DeprecationWarning:worker.*"]
+
+# ---------------------------------------------------------------------------
+# Coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+branch = true
+source = ["apps/api/app", "apps/worker/worker", "packages/shared/python", "packages/observability/python"]
+omit = ["*/tests/*", "*/alembic/*", "*/__main__.py"]
+
+[tool.coverage.report]
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
+
+# ---------------------------------------------------------------------------
+# Mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+exclude = ["^\\.venv/", "^node_modules/", "alembic/versions/"]
+
+[[tool.mypy.overrides]]
+module = ["arq.*", "pytesseract.*", "prometheus_client.*"]
+ignore_missing_imports = true

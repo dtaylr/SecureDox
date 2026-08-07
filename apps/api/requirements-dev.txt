@@ -1,0 +1,22 @@
+# Development and test dependencies for the API.
+-r requirements.txt
+
+pytest~=8.3.4
+pytest-asyncio~=0.25.0
+pytest-cov~=6.0.0
+# Deterministic reruns of a flaky test, used by scripts/check-flake-rate.ts to
+# measure the flake rate rather than to hide it.
+pytest-randomly~=3.16.0
+httpx~=0.28.1
+# Property-based tests for the rule engine: the interesting bugs are in the
+# inputs nobody thought to write a case for.
+hypothesis~=6.122.3
+# Postgres in a container per test session — the DB suites assert real
+# constraint and trigger behaviour, which sqlite cannot reproduce.
+testcontainers[postgres]~=4.9.0
+fakeredis~=2.26.2
+freezegun~=1.5.1
+
+ruff~=0.8.4
+mypy~=1.14.0
+types-redis~=4.6.0

@@ -1,0 +1,18 @@
+# Development and test dependencies for the worker.
+-r requirements.txt
+
+pytest~=8.3.4
+pytest-asyncio~=0.25.0
+pytest-cov~=6.0.0
+pytest-randomly~=3.16.0
+# The OCR adapters' interesting cases are generated, not enumerated: glyph
+# confusions, boundary confidences and malformed vendor payloads.
+hypothesis~=6.122.3
+# Drives the vendor adapter's failure paths without a live vendor.
+respx~=0.22.0
+fakeredis~=2.26.2
+testcontainers[postgres]~=4.9.0
+freezegun~=1.5.1
+
+ruff~=0.8.4
+mypy~=1.14.0

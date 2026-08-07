@@ -1,0 +1,57 @@
+# deps
+node_modules/
+.yarn/*
+!.yarn/patches
+.pnp.*
+.venv/
+venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# secrets & local env
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+!fixtures/**/*.key
+
+# test + scan artifacts
+artifacts/
+reports/
+playwright-report/
+test-results/
+allure-results/
+coverage/
+htmlcov/
+.coverage
+security/sbom/*.json
+!security/sbom/.gitkeep
+security/evidence/*
+!security/evidence/.gitkeep
+
+# infra state
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+ansible/*.retry
+
+# local storage of uploaded documents
+storage/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

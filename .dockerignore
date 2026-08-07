@@ -1,0 +1,13 @@
+node_modules
+.venv
+.git
+.next
+dist
+coverage
+artifacts
+reports
+playwright-report
+test-results
+storage
+**/__pycache__
+**/*.tsbuildinfo

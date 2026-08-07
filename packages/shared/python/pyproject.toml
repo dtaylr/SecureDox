@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "securedox-shared"
+version = "0.1.0"
+description = "Shared domain enums, validation rules and queue contracts for SecureDox"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.9,<3"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["securedox_shared"]

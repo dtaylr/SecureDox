@@ -1,0 +1,33 @@
+# Runtime dependencies for the intake API.
+# Pinned to compatible-release ranges: patch and minor updates flow in, majors
+# require a deliberate bump so a breaking change never arrives via a rebuild.
+# Trivy scans the resolved set in CI (`make sca`).
+
+fastapi~=0.115.6
+uvicorn[standard]~=0.34.0
+pydantic~=2.10.4
+pydantic-settings~=2.7.0
+
+# Database
+sqlalchemy[asyncio]~=2.0.36
+asyncpg~=0.30.0
+psycopg[binary]~=3.2.3          # sync driver, used only by Alembic
+alembic~=1.14.0
+
+# Queue
+redis~=5.2.1
+
+# Auth
+pyjwt~=2.10.1
+
+# Observability
+structlog~=24.4.0
+prometheus-client~=0.21.1
+
+# Multipart upload parsing (required by FastAPI's UploadFile)
+python-multipart~=0.0.20
+
+# Local workspace packages, installed with `pip install -e` by `make venv`.
+# Listed here as a reminder of the dependency, not resolved from an index:
+#   packages/shared/python
+#   packages/observability/python

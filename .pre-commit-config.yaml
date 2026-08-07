@@ -1,0 +1,105 @@
+# Pre-commit is the first DevSecOps gate: everything here also runs in Jenkins,
+# so a clean commit locally means the "Pre-flight" stage cannot fail on style.
+# Install with: make hooks
+default_install_hook_types: [pre-commit, commit-msg]
+fail_fast: false
+
+repos:
+  # --- generic hygiene -----------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+        exclude: ^fixtures/documents/
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-json
+        exclude: ^observability/grafana/dashboards/
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+        exclude: ^infra/k8s/overlays/
+      - id: check-toml
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: ["--branch", "main"]
+
+  # --- secret scanning (gate 1: never let a credential reach the remote) ---
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        args: ["protect", "--staged", "--config", "security/gitleaks/gitleaks.toml"]
+
+  # --- python --------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.0
+    hooks:
+      - id: mypy
+        files: ^(apps/(api|worker)|packages/.*/python)/
+        additional_dependencies: [pydantic>=2.9, sqlalchemy[mypy]>=2.0, types-redis]
+
+  # --- javascript / typescript --------------------------------------------
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        types_or: [javascript, jsx, ts, tsx, json, yaml, markdown, css]
+        exclude: ^(observability/grafana/dashboards/|packages/contracts/pact/)
+
+  # --- infrastructure ------------------------------------------------------
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.2
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+      - id: terraform_tflint
+
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v24.12.2
+    hooks:
+      - id: ansible-lint
+        files: ^infra/ansible/
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.1-beta
+    hooks:
+      - id: hadolint-docker
+        files: ^infra/docker/Dockerfile
+
+  # --- static application security testing ---------------------------------
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.99.0
+    hooks:
+      - id: semgrep
+        args:
+          - "--config=security/semgrep/rules.yml"
+          - "--config=p/owasp-top-ten"
+          - "--error"
+          - "--skip-unknown-extensions"
+          - "--quiet"
+
+  # --- repo-local guards ---------------------------------------------------
+  - repo: local
+    hooks:
+      - id: no-unapproved-generated-tests
+        name: AI-generated tests must carry a human approval record
+        entry: scripts/hooks/check-generated-test-approval.sh
+        language: script
+        files: ^tests/_generated/
+        pass_filenames: true
+
+      - id: conventional-commit
+        name: Conventional commit message
+        entry: scripts/hooks/check-commit-message.sh
+        language: script
+        stages: [commit-msg]

@@ -1,0 +1,27 @@
+# Runtime dependencies for the intake worker.
+# Shares the SQLAlchemy models with the API by importing `app.models`, so the
+# database pins must stay in lockstep with apps/api/requirements.txt.
+
+pydantic~=2.10.4
+pydantic-settings~=2.7.0
+
+sqlalchemy[asyncio]~=2.0.36
+asyncpg~=0.30.0
+redis~=5.2.1
+
+structlog~=24.4.0
+prometheus-client~=0.21.1
+
+# Vendor OCR adapter
+httpx~=0.28.1
+
+# Local tesseract adapter. Optional at runtime — the adapter raises a clear
+# "not installed" error rather than crashing at import — but included so the
+# worker image can run the tesseract provider without a rebuild.
+pytesseract~=0.3.13
+pillow~=11.0.0
+
+# Local workspace packages, installed with `pip install -e` by `make venv`:
+#   packages/shared/python
+#   packages/observability/python
+#   apps/api          (for app.models / app.services, shared with the API)

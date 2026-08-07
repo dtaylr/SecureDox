@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "paths": {
+      "@securedox/shared": ["./packages/shared/ts/src/index.ts"],
+      "@securedox/observability": ["./packages/observability/ts/src/index.ts"],
+      "@securedox/test-framework": ["./packages/test-framework/src/index.ts"],
+      "@securedox/test-framework/*": ["./packages/test-framework/src/*"]
+    }
+  }
+}

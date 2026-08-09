@@ -1,6 +1,6 @@
 # SecureDox
 
-SecureDox is ab document-intake platform.
+SecureDox is a document-intake platform.
 
 It is intentionally practical: a working app, a real test framework skeleton,
 security gates, release-readiness logic, observability, infrastructure assets,

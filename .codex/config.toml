@@ -1,0 +1,27 @@
+[agents]
+max_concurrent_threads_per_session = 8
+default_subagent_reasoning_effort = "medium"
+
+[[skills.config]]
+path = "skills/agent-loop-kit/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = "skills/test-impact-analysis/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = "skills/security-impact-review/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = "skills/release-gate-selection/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = "skills/false-confidence-review/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = "skills/anti-slop-patterns/SKILL.md"
+enabled = true

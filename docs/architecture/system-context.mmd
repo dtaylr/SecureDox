@@ -1,0 +1,15 @@
+flowchart LR
+  Reviewer[Reviewer / Admin] --> Web[React Web App]
+  Web --> Nginx[Nginx Reverse Proxy]
+  Nginx --> API[FastAPI Intake API]
+  API --> Postgres[(Postgres)]
+  API --> Redis[(Redis Queue)]
+  API --> Storage[(Document Storage)]
+  Redis --> Worker[OCR Worker]
+  Worker --> Storage
+  Worker --> Postgres
+  API --> Audit[(Audit Events)]
+  Worker --> Audit
+  Prometheus[Prometheus] --> API
+  Prometheus --> Worker
+  Grafana[Grafana] --> Prometheus

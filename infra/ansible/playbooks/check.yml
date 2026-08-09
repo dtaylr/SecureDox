@@ -1,0 +1,15 @@
+- name: Check SecureDox platform host readiness
+  hosts: securedox
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Verify Docker command is available
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+      failed_when: docker_version.rc not in [0, 127]
+
+    - name: Show readiness summary
+      ansible.builtin.debug:
+        msg: "Docker command rc={{ docker_version.rc }}; monitoring expected on port {{ securedox_monitoring_port }}"

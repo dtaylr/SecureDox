@@ -42,6 +42,7 @@ jobs:
           .venv/bin/python -m pytest tests/observability -v --junitxml=reports/junit-observability.xml
           yarn test:contract
           yarn test:mcp
+          yarn test:agents
 
       - name: Generate release readiness summary
         run: yarn gate:release

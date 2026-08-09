@@ -80,7 +80,7 @@ psql: ## Open a psql shell
 # Test pyramid
 # ---------------------------------------------------------------------------
 .PHONY: test
-test: test-unit test-api test-db test-security test-ocr test-contract test-observability test-mcp ## Fast suites run on every commit
+test: test-unit test-api test-db test-security test-ocr test-contract test-observability test-mcp test-agents test-platform ## Fast suites run on every commit
 
 .PHONY: test-unit
 test-unit: ## Service unit tests (api + worker)
@@ -113,6 +113,10 @@ test-observability: ## SRE asset and observability contract tests
 test-mcp: ## MCP Test Architect tool smoke tests
 	yarn test:mcp
 
+.PHONY: test-agents
+test-agents: ## Agent helper classifier and asset validation tests
+	yarn test:agents
+
 .PHONY: mcp-test-architect
 mcp-test-architect: ## Start the local MCP Test Architect server over stdio
 	yarn mcp:test-architect
@@ -144,6 +148,10 @@ test-mobile-ui: ## Appium mobile UI suite (requires an emulator/simulator or dev
 test-arch: ## Architecture fitness functions (layering, import boundaries)
 	yarn test:arch
 	$(PY) -m lint_imports --config tests/architecture/importlinter.ini
+
+.PHONY: test-platform
+test-platform: ## Platform/IaC architecture asset tests
+	$(PY) -m pytest tests/architecture -v --junitxml=reports/junit-architecture.xml
 
 .PHONY: test-perf
 test-perf: ## k6 smoke + load profiles
@@ -190,6 +198,31 @@ iac-scan: ## Terraform / Dockerfile / K8s misconfiguration scan
 	mkdir -p reports
 	trivy config --config security/trivy/trivy.yaml --format json \
 	  --output reports/trivy-config.json infra/
+
+.PHONY: checkov
+checkov: ## Checkov scan for Terraform/Kubernetes/Compose/Ansible
+	mkdir -p reports
+	checkov -d infra --quiet --output json --output-file-path reports/checkov.json
+
+.PHONY: terraform-fmt
+terraform-fmt: ## Check Terraform formatting
+	terraform -chdir=infra/terraform fmt -recursive -check
+
+.PHONY: terraform-validate
+terraform-validate: ## Validate local and staging Terraform modules
+	terraform -chdir=infra/terraform/envs/local init -backend=false
+	terraform -chdir=infra/terraform/envs/local validate
+	terraform -chdir=infra/terraform/envs/staging init -backend=false
+	terraform -chdir=infra/terraform/envs/staging validate
+
+.PHONY: ansible-check
+ansible-check: ## Ansible syntax checks
+	ansible-playbook -i infra/ansible/inventories/local.ini infra/ansible/playbooks/site.yml --syntax-check
+	ansible-playbook -i infra/ansible/inventories/local.ini infra/ansible/playbooks/check.yml --syntax-check
+
+.PHONY: kube-validate
+kube-validate: ## Kubernetes client-side manifest validation
+	kubectl apply -k infra/k8s/minikube/base --dry-run=client
 
 .PHONY: dockerfile-lint
 dockerfile-lint: ## Lint Dockerfiles with Hadolint

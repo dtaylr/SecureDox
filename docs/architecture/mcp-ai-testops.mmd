@@ -1,0 +1,10 @@
+flowchart TB
+  Agent[AI Coding Agent] --> MCP[MCP Test Architect]
+  MCP --> Risk[Route Risk Analysis]
+  MCP --> Generated[Draft Test]
+  MCP --> Review[False Confidence Review]
+  MCP --> Impact[Changed File Impact]
+  Generated --> Checklist[Human Review Checklist]
+  Review --> Checklist
+  Checklist --> Manifest[Generated Test Review Manifest]
+  Manifest --> ReleaseGate[Release Readiness Gate]

@@ -1,0 +1,40 @@
+- name: Install Docker packages on Debian family hosts
+  ansible.builtin.package:
+    name:
+      - docker.io
+      - docker-compose-plugin
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ensure Docker service is enabled
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+  when: ansible_os_family != "Darwin"
+
+- name: Create Docker daemon hardening directory
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    mode: "0755"
+  when: ansible_os_family != "Darwin"
+
+- name: Write Docker daemon hardening config
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+    owner: root
+    group: root
+    content: |
+      {
+        "icc": false,
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        },
+        "live-restore": true
+      }
+  notify: Restart Docker
+  when: ansible_os_family != "Darwin"

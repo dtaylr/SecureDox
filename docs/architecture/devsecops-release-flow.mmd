@@ -1,0 +1,15 @@
+flowchart LR
+  Commit[Commit / PR] --> Hooks[Pre-commit]
+  Hooks --> Tests[Test Suites]
+  Hooks --> Security[Security Gates]
+  Security --> SBOM[SBOM]
+  Security --> SAST[SAST]
+  Security --> SCA[SCA]
+  Security --> Container[Container Scan]
+  Tests --> Readiness[Release Readiness Script]
+  SBOM --> Readiness
+  SAST --> Readiness
+  SCA --> Readiness
+  Container --> Readiness
+  Readiness --> Artifact[Release Summary Artifact]
+  Readiness --> Block[Block Release On P0 Failure]

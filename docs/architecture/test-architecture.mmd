@@ -1,0 +1,16 @@
+flowchart TB
+  Change[Code Change] --> Impact[Agent Helper Impact Analysis]
+  Impact --> API[API Tests]
+  Impact --> DB[DB Integrity Tests]
+  Impact --> E2E[Playwright Critical Path]
+  Impact --> Security[Security Tests]
+  Impact --> Contract[Contract Tests]
+  Impact --> OCR[OCR Validation Tests]
+  API --> Evidence[Test Evidence]
+  DB --> Evidence
+  E2E --> Evidence
+  Security --> Evidence
+  Contract --> Evidence
+  OCR --> Evidence
+  Evidence --> Gate[Release Readiness JSON]
+  Gate --> Decision{GO / NO-GO}

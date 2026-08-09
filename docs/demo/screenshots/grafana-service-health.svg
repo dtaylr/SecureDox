@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Grafana service health dashboard sample</title>
+  <desc id="desc">Sample Grafana dashboard for SecureDox service health metrics.</desc>
+  <rect width="1200" height="760" fill="#111827"/>
+  <text x="36" y="58" font-family="Arial" font-size="28" fill="#ffffff">SecureDox Service Health</text>
+  <rect x="36" y="92" width="540" height="260" rx="6" fill="#1f2937" stroke="#374151"/>
+  <text x="60" y="128" font-family="Arial" font-size="16" fill="#e5e7eb">HTTP Request Rate</text>
+  <polyline points="70,300 150,260 230,274 310,210 390,235 470,172 540,190" fill="none" stroke="#60a5fa" stroke-width="4"/>
+  <rect x="624" y="92" width="540" height="260" rx="6" fill="#1f2937" stroke="#374151"/>
+  <text x="648" y="128" font-family="Arial" font-size="16" fill="#e5e7eb">API p95 Latency</text>
+  <polyline points="660,290 740,286 820,260 900,250 980,220 1060,205 1120,198" fill="none" stroke="#34d399" stroke-width="4"/>
+  <rect x="36" y="394" width="540" height="260" rx="6" fill="#1f2937" stroke="#374151"/>
+  <text x="60" y="430" font-family="Arial" font-size="16" fill="#e5e7eb">Queue Depth</text>
+  <polyline points="70,600 150,590 230,592 310,580 390,575 470,570 540,568" fill="none" stroke="#fbbf24" stroke-width="4"/>
+  <rect x="624" y="394" width="540" height="260" rx="6" fill="#1f2937" stroke="#374151"/>
+  <text x="648" y="430" font-family="Arial" font-size="16" fill="#e5e7eb">Document Processing p95</text>
+  <polyline points="660,610 740,560 820,545 900,530 980,510 1060,490 1120,470" fill="none" stroke="#f87171" stroke-width="4"/>
+</svg>

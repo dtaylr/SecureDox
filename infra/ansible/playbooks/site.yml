@@ -1,0 +1,9 @@
+- name: Prepare SecureDox platform host
+  hosts: securedox
+  become: true
+  gather_facts: true
+
+  roles:
+    - linux-hardening
+    - docker-host
+    - monitoring-agent

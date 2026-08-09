@@ -1,0 +1,31 @@
+- name: Ensure baseline hardening packages are present
+  ansible.builtin.package:
+    name:
+      - ca-certificates
+      - curl
+      - openssh-client
+    state: present
+  when: ansible_os_family != "Darwin"
+
+- name: Disable core dumps for all users
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/99-securedox.conf
+    mode: "0644"
+    owner: root
+    group: root
+    content: |
+      * hard core 0
+      * soft core 0
+  when: ansible_os_family != "Darwin"
+
+- name: Harden kernel network settings
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop:
+    - { name: net.ipv4.conf.all.rp_filter, value: "1" }
+    - { name: net.ipv4.conf.default.rp_filter, value: "1" }
+    - { name: net.ipv4.tcp_syncookies, value: "1" }
+  when: ansible_os_family != "Darwin"

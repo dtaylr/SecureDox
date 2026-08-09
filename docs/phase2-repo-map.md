@@ -196,3 +196,56 @@ Primary commands:
   `security/policies/mcp-test-architect-policy.yml`.
 - Generated-test review manifest example:
   `apps/mcp-test-architect/templates/generated-test-review.example.json`.
+
+## Phase 10 Agent/Helper Optimization
+
+- Agent folders: `agents/{qa-architect,test-architect,security-reviewer,release-gate-analyst,observability-reviewer,contract-test-reviewer,flaky-test-triage,documentation-maintainer}`.
+- Each agent has `prompt.md`, `responsibilities.md`, and `examples.md`.
+- Codex runtime subagents: `.codex/agents/*.toml`, with shared project settings
+  and skill registration in `.codex/config.toml`.
+- Repo-local skills: `skills/test-impact-analysis`,
+  `skills/security-impact-review`, `skills/release-gate-selection`,
+  `skills/false-confidence-review`, `skills/agent-loop-kit`, and
+  `skills/anti-slop-patterns`.
+- QA router agent: `agents/qa-architect`.
+- Agent/skill routing doc: `docs/qa-strategy/agent-skill-routing.md`.
+- Agent helper scripts: `scripts/agents/*.ts` with shared classifier library
+  in `scripts/agents/lib/agent-utils.ts` and asset validation in
+  `scripts/agents/lib/asset-validation.ts`.
+- Primary helper commands:
+  `yarn agents:changed-files`, `yarn agents:impacted-tests`,
+  `yarn agents:release-gates`, `yarn agents:validate-assets`, and
+  `make test-agents`.
+- Helper smoke tests: `tests/agents/agent-helper-scripts.test.ts` and
+  `tests/agents/agent-assets.test.ts`.
+
+## Phase 11 Infrastructure and Platform
+
+- Nginx load balancer: `infra/docker/nginx.conf` with reverse proxy routing,
+  request/correlation forwarding, security headers, rate limiting, upload
+  limit, timeouts, health routes, and metrics restriction.
+- Docker Compose hardening: `infra/docker/docker-compose.yml` with container
+  security options, dropped capabilities, health checks, networks, Prometheus,
+  and Grafana.
+- Terraform: `infra/terraform/modules/securedox_stack` plus
+  `infra/terraform/envs/{local,staging}`.
+- Ansible: `infra/ansible` with Linux hardening, Docker host setup, monitoring
+  agent role, and syntax-checkable playbooks.
+- Kubernetes/minikube: `infra/k8s/minikube` with Deployments, Services,
+  Ingress, ConfigMap, Secret example, probes, rolling updates, and HPA.
+- Platform CI: `.github/workflows/platform-iac.yml`.
+- Architecture tests: `tests/architecture/test_platform_assets.py`.
+- Primary commands: `make terraform-validate`, `make ansible-check`,
+  `make kube-validate`, `make iac-scan`, `make checkov`, `make test-platform`.
+
+## Phase 12 Documentation and Reviewer Polish
+
+- Polished repo entry: `README.md`.
+- Reviewer path: `docs/START-HERE-FOR-REVIEWERS.md`.
+- Architecture diagrams: `docs/architecture/*.mmd`.
+- Platform system design: `docs/system-design/platform-infrastructure.md`.
+- Demo screenshots: `docs/demo/screenshots/*.svg`.
+- Demo walkthrough script: `docs/demo/video/demo-walkthrough.md`.
+- Sample release/security reports: `docs/demo/reports/`.
+- Recruiter assets: `docs/recruiter/resume-bullets.md` and
+  `docs/recruiter/linkedin-github-summary.md`.

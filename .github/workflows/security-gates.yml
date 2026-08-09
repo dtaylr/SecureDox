@@ -63,6 +63,9 @@ jobs:
       - name: Dockerfile lint
         run: make dockerfile-lint
 
+      - name: IaC scan
+        run: make iac-scan
+
       - name: Upload security evidence
         if: always()
         uses: actions/upload-artifact@v4

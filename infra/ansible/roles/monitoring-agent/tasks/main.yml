@@ -1,0 +1,15 @@
+- name: Run node exporter monitoring agent
+  community.docker.docker_container:
+    name: securedox-node-exporter
+    image: prom/node-exporter:v1.8.2
+    restart_policy: unless-stopped
+    published_ports:
+      - "{{ securedox_monitoring_port }}:9100"
+    read_only: true
+    security_opts:
+      - no-new-privileges:true
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - "/:/host:ro,rslave"
+  when: ansible_os_family != "Darwin"

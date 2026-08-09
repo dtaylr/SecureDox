@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Release readiness report sample</title>
+  <desc id="desc">Sample release readiness screen showing no-go decision and blockers.</desc>
+  <rect width="1200" height="760" fill="#f9fafb"/>
+  <text x="48" y="72" font-family="Arial" font-size="34" fill="#111827">Release Readiness</text>
+  <rect x="48" y="112" width="240" height="120" rx="8" fill="#fee2e2" stroke="#ef4444"/>
+  <text x="78" y="158" font-family="Arial" font-size="18" fill="#991b1b">Decision</text>
+  <text x="78" y="198" font-family="Arial" font-size="42" fill="#991b1b">NO-GO</text>
+  <rect x="328" y="112" width="240" height="120" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+  <text x="358" y="158" font-family="Arial" font-size="18" fill="#065f46">Critical path</text>
+  <text x="358" y="198" font-family="Arial" font-size="42" fill="#065f46">100%</text>
+  <rect x="608" y="112" width="240" height="120" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+  <text x="638" y="158" font-family="Arial" font-size="18" fill="#1d4ed8">Secrets found</text>
+  <text x="638" y="198" font-family="Arial" font-size="42" fill="#1d4ed8">0</text>
+  <rect x="48" y="282" width="1104" height="360" rx="8" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="78" y="330" font-family="Arial" font-size="22" fill="#111827">Blockers</text>
+  <text x="98" y="380" font-family="Arial" font-size="18" fill="#374151">1. Container image has one critical vulnerability</text>
+  <text x="98" y="426" font-family="Arial" font-size="18" fill="#374151">2. p95 upload latency exceeds threshold</text>
+  <text x="98" y="472" font-family="Arial" font-size="18" fill="#374151">3. Release evidence is uploaded as JSON and Prometheus text</text>
+</svg>

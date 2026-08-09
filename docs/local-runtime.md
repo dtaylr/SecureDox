@@ -139,3 +139,73 @@ Generated tests require human review before merge. Use
 `docs/qa-strategy/ai-generated-test-review-checklist.md` and record approvals
 in `tests/reports/generated-test-review.json` when generated tests are used as
 release evidence.
+
+## Phase 10 Agents and Helper Scripts
+
+Agent prompts live under `agents/`, with one folder per specialist. Repo-local
+skills live under `skills/`.
+
+Run helper classifiers:
+
+```bash
+yarn agents:changed-files
+yarn agents:impacted-tests
+yarn agents:release-gates
+yarn agents:validate-assets
+make test-agents
+```
+
+The helper CLIs accept explicit files, for example:
+
+```bash
+node --experimental-strip-types scripts/agents/impacted-tests.ts \
+  --file apps/api/app/api/v1/documents.py \
+  --file apps/api/app/core/security.py
+```
+
+Agent folders must contain `prompt.md`, `responsibilities.md`, and
+`examples.md`. Runtime subagents live in `.codex/agents/*.toml`. Skill folders
+must contain a lean `SKILL.md` with only `name` and `description` frontmatter.
+`yarn agents:validate-assets` fails on missing runtime agent configs, copied
+scaffold files, nested agent-kit bundles, missing skill files, or `.DS_Store`
+drift.
+
+The full routing model is documented in
+`docs/qa-strategy/agent-skill-routing.md`.
+
+## Phase 11 Platform
+
+Platform checks:
+
+```bash
+make terraform-validate
+make ansible-check
+make kube-validate
+make iac-scan
+make checkov
+make test-platform
+```
+
+Key paths:
+
+- Nginx: `infra/docker/nginx.conf`
+- Terraform: `infra/terraform`
+- Ansible: `infra/ansible`
+- Minikube: `infra/k8s/minikube`
+- Platform docs: `docs/system-design/platform-infrastructure.md`
+
+## Phase 12 Reviewer Polish
+
+Start with:
+
+```text
+README.md
+docs/START-HERE-FOR-REVIEWERS.md
+```
+
+Demo assets:
+
+- Screenshots: `docs/demo/screenshots/`
+- Demo walkthrough: `docs/demo/video/demo-walkthrough.md`
+- Sample reports: `docs/demo/reports/`
+- Recruiter copy: `docs/recruiter/`

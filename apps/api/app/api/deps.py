@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.errors import ForbiddenError
+from app.core.logging import tenant_id_ctx, user_id_ctx
 from app.core.security import Principal, decode_token, parse_bearer
 from app.db.session import get_session
 from app.services.intake import IntakeService
@@ -34,7 +35,10 @@ async def get_principal(
     authorization: Annotated[str | None, Header()] = None,
 ) -> Principal:
     """Authenticate the caller. Raises 401 on any token problem."""
-    return decode_token(parse_bearer(authorization))
+    principal = decode_token(parse_bearer(authorization))
+    tenant_id_ctx.set(principal.tenant_id)
+    user_id_ctx.set(principal.subject)
+    return principal
 
 
 PrincipalDep = Annotated[Principal, Depends(get_principal)]
@@ -53,6 +57,8 @@ def require_roles(*roles: str) -> params.Depends:
     """
 
     async def _check(principal: PrincipalDep) -> Principal:
+        tenant_id_ctx.set(principal.tenant_id)
+        user_id_ctx.set(principal.subject)
         if not principal.has_role(*roles):
             raise ForbiddenError("Your role does not permit this operation.")
         return principal

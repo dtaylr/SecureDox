@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "apps/web" },
+    { "path": "apps/mcp-test-architect" },
     { "path": "packages/test-framework" },
     { "path": "tests/e2e" },
     { "path": "tests/contract" },

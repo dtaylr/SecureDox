@@ -80,7 +80,7 @@ psql: ## Open a psql shell
 # Test pyramid
 # ---------------------------------------------------------------------------
 .PHONY: test
-test: test-unit test-api test-db test-security test-ocr test-contract ## Fast suites run on every commit
+test: test-unit test-api test-db test-security test-ocr test-contract test-observability test-mcp ## Fast suites run on every commit
 
 .PHONY: test-unit
 test-unit: ## Service unit tests (api + worker)
@@ -104,6 +104,18 @@ test-security: ## Security smoke tests against the running stack
 .PHONY: test-contract
 test-contract: ## Provider + consumer contract verification
 	yarn test:contract
+
+.PHONY: test-observability
+test-observability: ## SRE asset and observability contract tests
+	$(PY) -m pytest tests/observability -v --junitxml=reports/junit-observability.xml
+
+.PHONY: test-mcp
+test-mcp: ## MCP Test Architect tool smoke tests
+	yarn test:mcp
+
+.PHONY: mcp-test-architect
+mcp-test-architect: ## Start the local MCP Test Architect server over stdio
+	yarn mcp:test-architect
 
 .PHONY: test-e2e
 test-e2e: ## Playwright end-to-end specs

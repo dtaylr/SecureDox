@@ -1,0 +1,39 @@
+{
+  "uid": "securedox-test-quality",
+  "title": "SecureDox Test Quality",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["securedox", "quality"],
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Critical Path Pass Rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "critical_path_pass_rate" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Flake Rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "test_flake_rate" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "OCR Confidence Distribution",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(ocr_confidence_score_bucket[5m])) by (le, document_type)" }]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Processing Failures",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(document_processing_failures_total[5m])) by (reason)" }]
+    }
+  ]
+}

@@ -52,8 +52,17 @@ http_requests_total = Counter(
     registry=REGISTRY,
 )
 
+# Phase 8 canonical alias. Prometheus exposes it as
+# `http_requests_total`; existing Securedox-prefixed dashboards keep working.
+canonical_http_requests_total = Counter(
+    "http_requests_total",
+    "HTTP requests handled by service.",
+    ("method", "route", "status"),
+    registry=REGISTRY,
+)
+
 http_request_duration_seconds = Histogram(
-    "securedox_http_request_duration_seconds",
+    "http_request_duration_seconds",
     "API request latency.",
     ("method", "route"),
     buckets=_API_BUCKETS,
@@ -70,6 +79,13 @@ documents_received_total = Counter(
 
 documents_rejected_at_gate_total = Counter(
     "securedox_documents_rejected_at_gate_total",
+    "Uploads refused before queueing (mime, size or checksum gate).",
+    ("tenant_id", "reason"),
+    registry=REGISTRY,
+)
+
+upload_rejections_total = Counter(
+    "upload_rejections_total",
     "Uploads refused before queueing (mime, size or checksum gate).",
     ("tenant_id", "reason"),
     registry=REGISTRY,
@@ -114,10 +130,17 @@ job_retries_total = Counter(
 )
 
 processing_duration_seconds = Histogram(
-    "securedox_processing_duration_seconds",
+    "document_processing_duration_seconds",
     "Wall-clock time from dequeue to terminal status.",
     ("document_type",),
     buckets=_PIPELINE_BUCKETS,
+    registry=REGISTRY,
+)
+
+document_processing_failures_total = Counter(
+    "document_processing_failures_total",
+    "Document processing failures by reason.",
+    ("reason",),
     registry=REGISTRY,
 )
 
@@ -131,7 +154,7 @@ ocr_duration_seconds = Histogram(
 )
 
 ocr_field_confidence = Histogram(
-    "securedox_ocr_field_confidence",
+    "ocr_confidence_score",
     "Per-field OCR confidence. Feeds the false-confidence reliability check.",
     ("document_type",),
     buckets=_CONFIDENCE_BUCKETS,
@@ -159,6 +182,41 @@ audit_events_total = Counter(
     "Audit trail rows written, by action.",
     ("action",),
     registry=REGISTRY,
+)
+
+security_access_denied_total = Counter(
+    "security_access_denied_total",
+    "Access denied responses by reason.",
+    ("reason",),
+    registry=REGISTRY,
+)
+
+rate_limit_triggered_total = Counter(
+    "rate_limit_triggered_total",
+    "Rate limit responses by route.",
+    ("route",),
+    registry=REGISTRY,
+)
+
+release_gate_failures_total = Counter(
+    "release_gate_failures_total",
+    "Release gate failures by gate category.",
+    ("gate",),
+    registry=REGISTRY,
+)
+
+test_flake_rate = Gauge(
+    "test_flake_rate",
+    "Most recent observed test flake rate as a ratio.",
+    registry=REGISTRY,
+    multiprocess_mode="liveall",
+)
+
+critical_path_pass_rate = Gauge(
+    "critical_path_pass_rate",
+    "Most recent critical path pass rate as a ratio.",
+    registry=REGISTRY,
+    multiprocess_mode="liveall",
 )
 
 

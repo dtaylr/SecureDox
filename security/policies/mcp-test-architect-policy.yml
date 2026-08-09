@@ -1,0 +1,53 @@
+version: 1
+name: mcp-test-architect-policy
+
+purpose: >
+  Permit AI-assisted test design while preventing unreviewed, weak, or
+  security-blind generated tests from becoming release evidence.
+
+server:
+  name: securedox-mcp-test-architect
+  transport: stdio
+  package: apps/mcp-test-architect
+  activity_log: reports/mcp-activity.log
+
+allowed_capabilities:
+  - analyze route and release risk
+  - generate draft Playwright tests
+  - review tests for false-confidence patterns
+  - suggest missing assertions
+  - map tests to requirements
+  - detect changed files and impacted tests
+
+prohibited_capabilities:
+  - committing generated tests without human approval
+  - writing secrets or credentials to test artifacts
+  - suppressing security, DB, contract, or audit assertions
+  - replacing release gates with AI judgment
+  - calling external LLMs from the local MCP server
+
+review_requirements:
+  generated_tests_require_human_review: true
+  review_checklist: docs/qa-strategy/ai-generated-test-review-checklist.md
+  release_gate_manifest: tests/reports/generated-test-review.json
+  block_unapproved_generated_tests: true
+
+logging:
+  required: true
+  redact_fields:
+    - test_code
+    - code
+    - content
+    - token
+    - password
+  required_fields:
+    - ts
+    - service_name
+    - event_type
+    - tool
+    - status
+
+security_gates:
+  - make test-security
+  - make test-contract
+  - yarn gate:release

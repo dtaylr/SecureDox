@@ -34,6 +34,7 @@ from app.core.errors import (
     PayloadTooLargeError,
     ValidationError,
 )
+from app.core.logging import document_id_ctx
 from app.core.security import ROLE_ADMIN, ROLE_REVIEWER, ROLE_UPLOADER, Principal
 from app.models import AuditEvent, Document, ExtractedField
 from app.schemas.common import Page, PageMeta
@@ -103,6 +104,7 @@ async def upload_document(
             actor=principal.subject,
         )
     )
+    document_id_ctx.set(str(outcome.document.id))
     return DocumentUploadResponse(
         id=outcome.document.id,
         status=outcome.document.status,

@@ -52,7 +52,11 @@ def _error_response(
             details=details or [],
         )
     )
-    return JSONResponse(status_code=status_code, content=body.model_dump(mode="json"))
+    return JSONResponse(
+        status_code=status_code,
+        content=body.model_dump(mode="json"),
+        headers={"X-SecureDox-Error-Code": code},
+    )
 
 
 def _correlation_of(request: Request) -> str:

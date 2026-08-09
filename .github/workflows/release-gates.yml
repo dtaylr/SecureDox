@@ -39,7 +39,9 @@ jobs:
           .venv/bin/python -m pytest tests/db -v --junitxml=reports/junit-db.xml
           .venv/bin/python -m pytest tests/security -v --junitxml=reports/junit-security.xml
           .venv/bin/python -m pytest tests/ocr -v --junitxml=reports/junit-ocr.xml
+          .venv/bin/python -m pytest tests/observability -v --junitxml=reports/junit-observability.xml
           yarn test:contract
+          yarn test:mcp
 
       - name: Generate release readiness summary
         run: yarn gate:release
@@ -49,5 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-readiness
-          path: reports/release-readiness.json
+          path: |
+            reports/release-readiness.json
+            reports/release-readiness.prom
           if-no-files-found: error

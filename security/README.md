@@ -26,5 +26,6 @@ yarn gate:security
 - `security/policies/dependency-policy.yml`
 - `security/policies/container-policy.yml`
 - `security/policies/release-security-policy.yml`
+- `security/policies/mcp-test-architect-policy.yml`
 
 OWASP ZAP baseline is intentionally deferred to Phase 5 or 6.

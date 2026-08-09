@@ -18,7 +18,17 @@ from collections.abc import Awaitable, Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.core.logging import correlation_id_ctx, get_logger, tenant_id_ctx
+from app.core.logging import (
+    correlation_id_ctx,
+    document_id_ctx,
+    error_code_ctx,
+    event_type_ctx,
+    get_logger,
+    latency_ms_ctx,
+    status_ctx,
+    tenant_id_ctx,
+    user_id_ctx,
+)
 from securedox_observability import (
     CORRELATION_HEADER,
     metrics,
@@ -68,11 +78,23 @@ class CorrelationMiddleware(BaseHTTPMiddleware):
         request.state.correlation_id = correlation_id
         token = correlation_id_ctx.set(correlation_id)
         tenant_token = tenant_id_ctx.set(None)
+        user_token = user_id_ctx.set(None)
+        document_token = document_id_ctx.set(None)
+        event_token = event_type_ctx.set("http_request")
+        status_token = status_ctx.set(None)
+        latency_token = latency_ms_ctx.set(None)
+        error_token = error_code_ctx.set(None)
         try:
             response = await call_next(request)
         finally:
             correlation_id_ctx.reset(token)
             tenant_id_ctx.reset(tenant_token)
+            user_id_ctx.reset(user_token)
+            document_id_ctx.reset(document_token)
+            event_type_ctx.reset(event_token)
+            status_ctx.reset(status_token)
+            latency_ms_ctx.reset(latency_token)
+            error_code_ctx.reset(error_token)
 
         # Echoed so a client can quote it in a support ticket without having to
         # find it in a response body that may be an error envelope.
@@ -89,21 +111,47 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
         started = time.perf_counter()
         status_code = 500
+        error_code: str | None = None
         try:
             response = await call_next(request)
             status_code = response.status_code
+            error_code = response.headers.get("X-SecureDox-Error-Code")
             return response
         finally:
             # In `finally` so an unhandled exception still records a 500 — the
             # requests that fail hardest are the ones you most need counted.
             route = _route_template(request)
+            if document_id := request.path_params.get("document_id"):
+                document_id_ctx.set(str(document_id))
             elapsed = time.perf_counter() - started
+            latency_ms = round(elapsed * 1000, 3)
+            status_ctx.set(str(status_code))
+            latency_ms_ctx.set(latency_ms)
+            if error_code:
+                error_code_ctx.set(error_code)
             metrics.http_requests_total.labels(
+                method=request.method, route=route, status=str(status_code)
+            ).inc()
+            metrics.canonical_http_requests_total.labels(
                 method=request.method, route=route, status=str(status_code)
             ).inc()
             metrics.http_request_duration_seconds.labels(
                 method=request.method, route=route
             ).observe(elapsed)
+            if status_code == 401:
+                metrics.security_access_denied_total.labels(reason="unauthorized").inc()
+            elif status_code == 403:
+                metrics.security_access_denied_total.labels(reason="forbidden").inc()
+            elif status_code == 429:
+                metrics.rate_limit_triggered_total.labels(route=route).inc()
+            logger.info(
+                "http_request_complete",
+                method=request.method,
+                route=route,
+                status=str(status_code),
+                latency_ms=latency_ms,
+                error_code=error_code,
+            )
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

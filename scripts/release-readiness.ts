@@ -58,6 +58,7 @@ type TestSummary = {
 };
 
 const outputPath = argValue("--output") ?? "reports/release-readiness.json";
+const prometheusOutputPath = argValue("--prometheus-output") ?? "reports/release-readiness.prom";
 const noFail = process.argv.includes("--no-fail");
 
 const thresholds = {
@@ -236,6 +237,11 @@ const readiness: ReleaseReadiness = {
 
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, `${JSON.stringify(readiness, null, 2)}\n`);
+writePrometheusEvidence(prometheusOutputPath, readiness, {
+  criticalPassRate,
+  flakeRate,
+  blockerGates: blockers.map(classifyBlocker)
+});
 console.log(JSON.stringify(readiness, null, 2));
 
 if (readiness.release_decision === "NO-GO" && !noFail) {
@@ -433,4 +439,65 @@ function warnOn(condition: boolean, message: string): void {
   if (condition) {
     warnings.push(message);
   }
+}
+
+function writePrometheusEvidence(
+  path: string,
+  readiness: ReleaseReadiness,
+  values: {
+    criticalPassRate: number | null;
+    flakeRate: number | null;
+    blockerGates: string[];
+  }
+): void {
+  mkdirSync(dirname(path), { recursive: true });
+  const gateCounts = values.blockerGates.reduce<Record<string, number>>((counts, gate) => {
+    counts[gate] = (counts[gate] ?? 0) + 1;
+    return counts;
+  }, {});
+  const lines = [
+    "# HELP critical_path_pass_rate Most recent critical path pass rate as a ratio.",
+    "# TYPE critical_path_pass_rate gauge",
+    `critical_path_pass_rate ${values.criticalPassRate === null ? 0 : values.criticalPassRate / 100}`,
+    "# HELP test_flake_rate Most recent observed test flake rate as a ratio.",
+    "# TYPE test_flake_rate gauge",
+    `test_flake_rate ${values.flakeRate === null ? 0 : values.flakeRate / 100}`,
+    "# HELP release_gate_failures_total Release gate failures by gate category.",
+    "# TYPE release_gate_failures_total counter",
+    ...Object.entries(gateCounts).map(
+      ([gate, count]) => `release_gate_failures_total{gate="${escapePromLabel(gate)}"} ${count}`
+    ),
+    "# HELP release_readiness_decision Current release decision, 1 for GO and 0 for NO-GO.",
+    "# TYPE release_readiness_decision gauge",
+    `release_readiness_decision ${readiness.release_decision === "GO" ? 1 : 0}`
+  ];
+  writeFileSync(path, `${lines.join("\n")}\n`);
+}
+
+function classifyBlocker(blocker: string): string {
+  const text = blocker.toLowerCase();
+  if (
+    text.includes("secret") ||
+    text.includes("sast") ||
+    text.includes("security") ||
+    text.includes("vulnerability") ||
+    text.includes("sbom") ||
+    text.includes("idor")
+  ) {
+    return "security";
+  }
+  if (text.includes("latency") || text.includes("error rate") || text.includes("ocr")) {
+    return "reliability";
+  }
+  if (text.includes("db") || text.includes("audit") || text.includes("data")) {
+    return "data_integrity";
+  }
+  if (text.includes("generated test") || text.includes("ai-generated")) {
+    return "ai_generated_tests";
+  }
+  return "quality";
+}
+
+function escapePromLabel(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("\n", "\\n");
 }

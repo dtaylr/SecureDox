@@ -32,6 +32,8 @@
     "test:e2e": "yarn workspace @securedox/e2e-tests test",
     "test:contract": "yarn workspace @securedox/contract-tests test",
     "test:security": "yarn workspace @securedox/security-tests test",
+    "test:mcp": "yarn workspace @securedox/mcp-test-architect test",
+    "mcp:test-architect": "yarn workspace @securedox/mcp-test-architect start",
     "test:bdd": "yarn workspace @securedox/e2e-tests test:bdd",
     "test:mobile:ui": "yarn workspace @securedox/mobile-ui-tests test",
     "test:arch": "yarn workspace @securedox/architecture-tests test",

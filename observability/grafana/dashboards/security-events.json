@@ -1,0 +1,39 @@
+{
+  "uid": "securedox-security-events",
+  "title": "SecureDox Security Events",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "tags": ["securedox", "security"],
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Access Denied",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(security_access_denied_total[5m])) by (reason)" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Upload Rejections",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(upload_rejections_total[5m])) by (reason)" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Rate Limits",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(rate_limit_triggered_total[5m])) by (route)" }]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Audit Events",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(securedox_audit_events_total[5m])) by (action)" }]
+    }
+  ]
+}

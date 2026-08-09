@@ -129,6 +129,9 @@ class IntakeService:
             metrics.documents_rejected_at_gate_total.labels(
                 tenant_id=request.tenant_id, reason="duplicate"
             ).inc()
+            metrics.upload_rejections_total.labels(
+                tenant_id=request.tenant_id, reason="duplicate"
+            ).inc()
             raise DuplicateDocumentError(f"This document was already uploaded as {existing.id}.")
 
         document_id = uuid.uuid4()
@@ -201,6 +204,7 @@ class IntakeService:
 
     def _count_rejection(self, tenant_id: str, reason: str) -> None:
         metrics.documents_rejected_at_gate_total.labels(tenant_id=tenant_id, reason=reason).inc()
+        metrics.upload_rejections_total.labels(tenant_id=tenant_id, reason=reason).inc()
 
     async def _enqueue(self, document: Document) -> None:
         """Publish the job and advance the status to QUEUED.

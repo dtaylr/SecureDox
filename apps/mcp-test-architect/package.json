@@ -1,0 +1,19 @@
+{
+  "name": "@securedox/mcp-test-architect",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "securedox-mcp-test-architect": "src/server.ts"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "list-tools": "node --experimental-strip-types src/server.ts --list-tools",
+    "test": "node --experimental-strip-types tests/tools.test.ts",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

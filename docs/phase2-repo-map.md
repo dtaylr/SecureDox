@@ -155,3 +155,44 @@ Primary commands:
   `make test-contract` and `.github/workflows/release-gates.yml`.
 - Release readiness consumes contract evidence from `reports/junit-contract.xml`
   alongside API and DB JUnit reports.
+
+## Phase 8 Observability and SRE Workflows
+
+- Structured logs: `apps/api/app/core/logging.py` injects
+  `correlation_id`, `tenant_id`, `user_id`, `document_id`, `job_id`,
+  `service_name`, `event_type`, `status`, `latency_ms`, and `error_code` from
+  context variables.
+- API request context and metrics: `apps/api/app/observability/middleware.py`.
+- Worker job context and metrics: `apps/worker/worker/main.py` and
+  `apps/worker/worker/processor.py`.
+- Metric definitions: `packages/observability/python/securedox_observability/metrics.py`.
+- Prometheus config and alerts: `observability/prometheus/`.
+- Grafana dashboards and provisioning: `observability/grafana/`.
+- SRE runbooks: `docs/sre-runbooks/`.
+- Observability/failure-injection asset tests:
+  `tests/observability/test_sre_assets.py`.
+- Primary command: `make test-observability`.
+- Local observability URLs: Prometheus `http://localhost:9090`, Grafana
+  `http://localhost:3001`.
+
+## Phase 9 MCP / AI TestOps Layer
+
+- MCP package: `apps/mcp-test-architect`.
+- Local server command: `make mcp-test-architect` or
+  `yarn workspace @securedox/mcp-test-architect start`.
+- Tool smoke command: `make test-mcp`.
+- MCP tools:
+  `analyze_route_risk`, `generate_playwright_test`,
+  `review_test_for_false_confidence`, `suggest_missing_assertions`,
+  `map_test_to_requirement`, `summarize_release_risk`,
+  `detect_changed_routes`, `detect_changed_api_contracts`,
+  `detect_changed_db_schema`, `detect_changed_security_sensitive_files`,
+  `suggest_impacted_tests`, and `suggest_required_release_gates`.
+- MCP activity log: `reports/mcp-activity.log` with code/test bodies
+  redacted.
+- AI-generated-test checklist:
+  `docs/qa-strategy/ai-generated-test-review-checklist.md`.
+- MCP security policy:
+  `security/policies/mcp-test-architect-policy.yml`.
+- Generated-test review manifest example:
+  `apps/mcp-test-architect/templates/generated-test-review.example.json`.

@@ -1,0 +1,62 @@
+groups:
+  - name: securedox-sre
+    rules:
+      - alert: DocumentProcessingLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(document_processing_duration_seconds_bucket[5m])) by (le, document_type)) > 30
+        for: 10m
+        labels:
+          severity: warning
+          service_name: securedox-worker
+        annotations:
+          summary: Document processing p95 latency is above 30 seconds.
+          runbook_url: docs/sre-runbooks/document-processing-latency.md
+
+      - alert: OcrFailureSpike
+        expr: sum(rate(securedox_ocr_failures_total[5m])) by (provider) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service_name: securedox-worker
+        annotations:
+          summary: OCR adapter failures are spiking.
+          runbook_url: docs/sre-runbooks/ocr-failure-spike.md
+
+      - alert: ReleaseGateFailure
+        expr: increase(release_gate_failures_total[30m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service_name: securedox-ci
+        annotations:
+          summary: A release gate failed.
+          runbook_url: docs/sre-runbooks/release-gate-failure.md
+
+      - alert: SecurityAccessDeniedSpike
+        expr: sum(rate(security_access_denied_total{reason="forbidden"}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service_name: securedox-api
+        annotations:
+          summary: Authorization denial rate is elevated.
+          runbook_url: docs/sre-runbooks/security/idor-attempts-spike.md
+
+      - alert: UploadRejectionSpike
+        expr: sum(rate(upload_rejections_total[5m])) by (reason) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          service_name: securedox-api
+        annotations:
+          summary: Upload rejections are spiking.
+          runbook_url: docs/sre-runbooks/security/idor-attempts-spike.md
+
+      - alert: SecretDetectedInCi
+        expr: increase(release_gate_failures_total{gate="security"}[30m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service_name: securedox-ci
+        annotations:
+          summary: Security release gate failed; inspect secret scan evidence first.
+          runbook_url: docs/sre-runbooks/security/secret-detected-in-ci.md

@@ -1,0 +1,39 @@
+{
+  "uid": "securedox-release-readiness",
+  "title": "SecureDox Release Readiness",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["securedox", "release-gates"],
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Critical Path Pass Rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "critical_path_pass_rate" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Test Flake Rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "test_flake_rate" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Release Gate Failures",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(release_gate_failures_total[1h])) by (gate)" }]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Critical Container Vulnerability Blockers",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "increase(release_gate_failures_total{gate=\"security\"}[24h])" }]
+    }
+  ]
+}

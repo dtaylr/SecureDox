@@ -1,0 +1,50 @@
+{
+  "scenarios": [
+    {
+      "id": "ocr-degradation-latency",
+      "runbook": "docs/sre-runbooks/document-processing-latency.md",
+      "injection": "Run worker with OCR_DEGRADATION_RATE=1.0 and upload fixture documents.",
+      "expected_signals": [
+        "document_processing_duration_seconds",
+        "ocr_confidence_score",
+        "securedox_queue_depth"
+      ]
+    },
+    {
+      "id": "ocr-vendor-unavailable",
+      "runbook": "docs/sre-runbooks/ocr-failure-spike.md",
+      "injection": "Run worker with OCR_PROVIDER=vendor and an invalid OCR_VENDOR_URL.",
+      "expected_signals": [
+        "securedox_ocr_failures_total",
+        "document_processing_failures_total"
+      ]
+    },
+    {
+      "id": "release-evidence-missing",
+      "runbook": "docs/sre-runbooks/release-gate-failure.md",
+      "injection": "Run release readiness with required evidence intentionally absent.",
+      "expected_signals": [
+        "release_gate_failures_total",
+        "critical_path_pass_rate",
+        "test_flake_rate"
+      ]
+    },
+    {
+      "id": "cross-tenant-access-denied",
+      "runbook": "docs/sre-runbooks/security/idor-attempts-spike.md",
+      "injection": "Use one tenant token to request another tenant's document.",
+      "expected_signals": [
+        "security_access_denied_total",
+        "http_requests_total"
+      ]
+    },
+    {
+      "id": "secret-detected",
+      "runbook": "docs/sre-runbooks/security/secret-detected-in-ci.md",
+      "injection": "Create a throwaway fake token fixture and run the secret scanner.",
+      "expected_signals": [
+        "release_gate_failures_total"
+      ]
+    }
+  ]
+}

@@ -95,6 +95,7 @@ class DocumentProcessor:
         except IntegrityError as exc:
             await self._terminate(session, audit, document, DocumentStatus.QUARANTINED, str(exc))
             metrics.jobs_processed_total.labels(outcome="quarantined").inc()
+            metrics.document_processing_failures_total.labels(reason="integrity").inc()
             return ProcessingOutcome(
                 document.id, DocumentStatus.QUARANTINED, time.perf_counter() - started
             )
@@ -106,9 +107,11 @@ class DocumentProcessor:
             if not exc.permanent:
                 # Surfaces to the consumer, which owns the retry budget.
                 metrics.job_retries_total.labels(reason=exc.kind).inc()
+                metrics.document_processing_failures_total.labels(reason=exc.kind).inc()
                 raise
             await self._terminate(session, audit, document, DocumentStatus.FAILED, str(exc))
             metrics.jobs_processed_total.labels(outcome="failed").inc()
+            metrics.document_processing_failures_total.labels(reason=exc.kind).inc()
             return ProcessingOutcome(
                 document.id, DocumentStatus.FAILED, time.perf_counter() - started
             )

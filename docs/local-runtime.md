@@ -24,6 +24,8 @@ make seed
 - API readiness: http://localhost:8000/ready
 - API docs: http://localhost:8000/docs
 - Gateway: http://localhost:8080
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3001
 
 ## Demo Login
 
@@ -91,4 +93,49 @@ yarn gate:release
 ```
 
 The script writes `reports/release-readiness.json` and exits non-zero when the
-decision is `NO-GO`.
+decision is `NO-GO`. It also writes Prometheus text evidence to
+`reports/release-readiness.prom`.
+
+## Phase 8 Observability
+
+Prometheus scrapes:
+
+- API metrics: `api:8000/metrics`
+- Worker metrics: `worker:9100/metrics`
+
+Grafana loads dashboards from `observability/grafana/dashboards`. Local login
+defaults to `admin` / `securedox`.
+
+Run SRE asset checks:
+
+```bash
+make test-observability
+```
+
+Runbooks live under `docs/sre-runbooks/`, and alert rules in
+`observability/prometheus/alerts.yml` link back to them.
+
+## Phase 9 MCP Test Architect
+
+Start the local MCP server over stdio:
+
+```bash
+make mcp-test-architect
+```
+
+List available MCP tools without starting a client session:
+
+```bash
+yarn workspace @securedox/mcp-test-architect list-tools
+```
+
+Run MCP tool smoke tests:
+
+```bash
+make test-mcp
+```
+
+Generated tests require human review before merge. Use
+`docs/qa-strategy/ai-generated-test-review-checklist.md` and record approvals
+in `tests/reports/generated-test-review.json` when generated tests are used as
+release evidence.

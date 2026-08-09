@@ -28,7 +28,18 @@ import signal
 from pydantic import ValidationError as PydanticValidationError
 from redis.asyncio import Redis
 
-from app.core.logging import configure_logging, correlation_id_ctx, get_logger
+from app.core.logging import (
+    configure_logging,
+    correlation_id_ctx,
+    document_id_ctx,
+    error_code_ctx,
+    event_type_ctx,
+    get_logger,
+    job_id_ctx,
+    latency_ms_ctx,
+    status_ctx,
+    tenant_id_ctx,
+)
 from app.db.session import dispose_engine, get_sessionmaker
 from app.services.storage import build_storage
 from securedox_observability import (
@@ -102,10 +113,24 @@ class Worker:
                 continue
 
             token = correlation_id_ctx.set(job.correlation_id)
+            tenant_token = tenant_id_ctx.set(job.tenant_id)
+            document_token = document_id_ctx.set(str(job.document_id))
+            job_token = job_id_ctx.set(f"{job.document_id}:{job.attempt}")
+            event_token = event_type_ctx.set("document_job")
+            status_token = status_ctx.set(None)
+            latency_token = latency_ms_ctx.set(None)
+            error_token = error_code_ctx.set(None)
             try:
                 await self._handle(job)
             finally:
                 correlation_id_ctx.reset(token)
+                tenant_id_ctx.reset(tenant_token)
+                document_id_ctx.reset(document_token)
+                job_id_ctx.reset(job_token)
+                event_type_ctx.reset(event_token)
+                status_ctx.reset(status_token)
+                latency_ms_ctx.reset(latency_token)
+                error_code_ctx.reset(error_token)
         logger.debug("consumer_exited", slot=slot)
 
     async def _pop(self) -> str | None:
@@ -140,10 +165,15 @@ class Worker:
                 document_id=str(job.document_id),
                 status=outcome.status.value,
                 duration_seconds=round(outcome.duration_seconds, 3),
+                latency_ms=round(outcome.duration_seconds * 1000, 3),
             )
+            status_ctx.set(outcome.status.value)
+            latency_ms_ctx.set(round(outcome.duration_seconds * 1000, 3))
         except OcrError as exc:
+            error_code_ctx.set(exc.kind)
             await self._retry(job, reason=exc.kind)
         except Exception as exc:
+            error_code_ctx.set(type(exc).__name__)
             logger.exception("job_failed", document_id=str(job.document_id))
             await self._retry(job, reason=type(exc).__name__)
 

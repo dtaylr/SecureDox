@@ -123,6 +123,13 @@ async function parseError(response: Response): Promise<string> {
   }
 }
 
+function correlationId(prefix = "web"): string {
+  if (globalThis.crypto?.randomUUID) {
+    return `${prefix}-${globalThis.crypto.randomUUID().replaceAll("-", "").slice(0, 20)}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`.slice(0, 64);
+}
+
 function App() {
   const [role, setRole] = useState<Role>("admin");
   const [tenantId, setTenantId] = useState("acme-lending");
@@ -149,6 +156,7 @@ function App() {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       headers: {
+        "X-Correlation-ID": correlationId(),
         ...(token ? authHeaders : {}),
         ...(init.headers ?? {})
       }

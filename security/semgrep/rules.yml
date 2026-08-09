@@ -1,0 +1,41 @@
+rules:
+  - id: securedox-no-raw-jwt-decode-without-algorithms
+    message: jwt.decode must pin accepted algorithms.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: jwt.decode(...)
+      - pattern-not: jwt.decode(..., algorithms=[...], ...)
+
+  - id: securedox-no-shell-true
+    message: Avoid shell=True; pass argv arrays to subprocess.
+    severity: ERROR
+    languages: [python]
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+
+  - id: securedox-fastapi-no-inline-secret-default
+    message: Do not introduce production secrets as settings defaults.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: $NAME: str = "$VALUE"
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i).*(secret|token|password|api_key).*
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^(?!local-dev-only-not-a-real-secret|securedox-demo).*$
+
+  - id: securedox-ts-no-dangerously-set-inner-html
+    message: Do not render untrusted HTML in the web app.
+    severity: ERROR
+    languages: [typescript, tsx]
+    pattern: dangerouslySetInnerHTML={...}
+
+  - id: securedox-ts-no-localstorage-token
+    message: Do not persist auth tokens in localStorage.
+    severity: WARNING
+    languages: [typescript, tsx]
+    pattern-either:
+      - pattern: localStorage.setItem(..., $TOKEN)
+      - pattern: window.localStorage.setItem(..., $TOKEN)

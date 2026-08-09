@@ -1,0 +1,6 @@
+failure-threshold: warning
+ignored:
+  # Python package versions are managed in requirements files for API/worker.
+  - DL3013
+  # Alpine package pinning is not used in the web dev image.
+  - DL3018

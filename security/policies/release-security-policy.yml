@@ -1,0 +1,30 @@
+version: 1
+name: securedox-release-security-policy
+
+required_gates:
+  secrets:
+    report: reports/gitleaks.sarif
+    fail_on_findings: true
+  sast:
+    report: reports/semgrep.sarif
+    fail_on_severity:
+      - ERROR
+      - WARNING
+  sca:
+    report: reports/trivy-fs.json
+    fail_on_severity:
+      - CRITICAL
+      - HIGH
+  containers:
+    report: reports/trivy-images.json
+    fail_on_severity:
+      - CRITICAL
+      - HIGH
+  sbom:
+    required_files:
+      - security/sbom/securedox-source.cdx.json
+      - security/sbom/securedox-source.spdx.json
+
+exceptions:
+  require_ticket: true
+  max_age_days: 30

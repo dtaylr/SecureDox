@@ -1,0 +1,51 @@
+name: release-gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-readiness:
+    name: release readiness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile || yarn install
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -r tests/requirements.txt
+
+      - name: Generate available quality evidence
+        continue-on-error: true
+        run: |
+          mkdir -p reports tests/reports
+          .venv/bin/python -m pytest tests/api -v --junitxml=reports/junit-api.xml
+          .venv/bin/python -m pytest tests/db -v --junitxml=reports/junit-db.xml
+          .venv/bin/python -m pytest tests/security -v --junitxml=reports/junit-security.xml
+
+      - name: Generate release readiness summary
+        run: yarn gate:release
+
+      - name: Upload release summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness
+          path: reports/release-readiness.json
+          if-no-files-found: error

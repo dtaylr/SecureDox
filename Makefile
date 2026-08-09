@@ -99,6 +99,7 @@ test-db: ## Database rule/constraint/integrity validation
 .PHONY: test-security
 test-security: ## Security smoke tests against the running stack
 	$(PY) -m pytest tests/security -v --junitxml=reports/junit-security.xml
+	yarn test:security
 
 .PHONY: test-contract
 test-contract: ## Provider + consumer contract verification
@@ -140,20 +141,27 @@ test-chaos: ## Fault-injection scenarios against the local stack
 # Security
 # ---------------------------------------------------------------------------
 .PHONY: security
-security: sast sca secrets sbom ## Static security suite (no running app required)
+security: secrets sast sca dep-audit sbom dockerfile-lint ## Static security suite (no running app required)
 
 .PHONY: sast
 sast: ## Semgrep static analysis
+	mkdir -p reports
 	semgrep scan --config security/semgrep/rules.yml --config p/owasp-top-ten \
 	  --sarif --output reports/semgrep.sarif --error
 
 .PHONY: sca
 sca: ## Dependency vulnerability scan
+	mkdir -p reports
 	trivy fs --config security/trivy/trivy.yaml --scanners vuln,license \
 	  --format json --output reports/trivy-fs.json .
 
+.PHONY: dep-audit
+dep-audit: ## npm/yarn/OSV dependency audit
+	./scripts/run-dependency-audit.sh
+
 .PHONY: secrets
 secrets: ## Secret scanning
+	mkdir -p reports
 	gitleaks detect --config security/gitleaks/gitleaks.toml \
 	  --report-format sarif --report-path reports/gitleaks.sarif
 
@@ -163,8 +171,13 @@ sbom: ## Generate CycloneDX SBOMs for every artifact
 
 .PHONY: iac-scan
 iac-scan: ## Terraform / Dockerfile / K8s misconfiguration scan
+	mkdir -p reports
 	trivy config --config security/trivy/trivy.yaml --format json \
 	  --output reports/trivy-config.json infra/
+
+.PHONY: dockerfile-lint
+dockerfile-lint: ## Lint Dockerfiles with Hadolint
+	hadolint apps/api/Dockerfile apps/worker/Dockerfile apps/web/Dockerfile
 
 .PHONY: image-scan
 image-scan: ## Scan built container images

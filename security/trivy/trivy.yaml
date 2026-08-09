@@ -1,0 +1,27 @@
+format: json
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+ignore-unfixed: false
+timeout: 10m
+exit-code: 1
+scanners:
+  - vuln
+  - secret
+  - misconfig
+  - license
+vulnerability:
+  type:
+    - os
+    - library
+misconfiguration:
+  include-non-failures: false
+  trace: false
+secret:
+  config: security/gitleaks/gitleaks.toml
+license:
+  forbidden:
+    - GPL-3.0
+    - AGPL-3.0
+    - SSPL-1.0

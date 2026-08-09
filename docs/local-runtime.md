@@ -58,3 +58,36 @@ Or run the critical smoke lane:
 ```bash
 make test-smoke
 ```
+
+## Phase 4 Security Gates
+
+Install hooks once:
+
+```bash
+make hooks
+```
+
+Run static security gates:
+
+```bash
+make security
+```
+
+Run image scanning after Docker is available:
+
+```bash
+make image-scan
+```
+
+Security evidence is written under `reports/` and `security/sbom/`.
+
+## Phase 5 Release Readiness
+
+Generate a go/no-go decision from available evidence:
+
+```bash
+yarn gate:release
+```
+
+The script writes `reports/release-readiness.json` and exits non-zero when the
+decision is `NO-GO`.

@@ -1,0 +1,22 @@
+version: 1
+name: securedox-container-policy
+
+images:
+  fail_on:
+    severity:
+      - CRITICAL
+      - HIGH
+  require:
+    non_root_user: true
+    no_latest_tag: true
+    healthcheck: true
+    minimal_base_image: true
+
+dockerfiles:
+  lint:
+    tool: hadolint
+    failure_threshold: warning
+  paths:
+    - apps/api/Dockerfile
+    - apps/worker/Dockerfile
+    - apps/web/Dockerfile

@@ -74,7 +74,7 @@ repos:
     rev: v2.12.1-beta
     hooks:
       - id: hadolint-docker
-        files: ^infra/docker/Dockerfile
+        files: ^(apps/(api|worker|web)/Dockerfile|infra/docker/.*Dockerfile)$
 
   # --- static application security testing ---------------------------------
   - repo: https://github.com/semgrep/semgrep
@@ -103,3 +103,10 @@ repos:
         entry: scripts/hooks/check-commit-message.sh
         language: script
         stages: [commit-msg]
+
+      - id: dependency-audit-wrapper
+        name: Dependency audit wrapper
+        entry: scripts/run-dependency-audit.sh
+        language: script
+        pass_filenames: false
+        files: ^(package.json|yarn.lock|package-lock.json|apps/.*/package.json|packages/.*/package.json|.*requirements.*\.txt)$

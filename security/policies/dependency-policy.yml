@@ -1,0 +1,32 @@
+version: 1
+name: securedox-dependency-policy
+
+vulnerability:
+  fail_on:
+    severity:
+      - CRITICAL
+      - HIGH
+  allow_unfixed: false
+
+licenses:
+  deny:
+    - GPL-3.0
+    - AGPL-3.0
+    - SSPL-1.0
+  review:
+    - LGPL-3.0
+    - MPL-2.0
+
+package_managers:
+  python:
+    files:
+      - apps/api/requirements.txt
+      - apps/worker/requirements.txt
+      - tests/requirements.txt
+  node:
+    files:
+      - package.json
+      - apps/web/package.json
+      - packages/test-framework/package.json
+      - tests/e2e/package.json
+      - tests/security/package.json

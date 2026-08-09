@@ -1,0 +1,18 @@
+{
+  "name": "@securedox/security-tests",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test -c playwright.config.ts",
+    "show-report": "playwright show-report ../reports/security-playwright-html"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.49.1",
+    "@securedox/test-framework": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

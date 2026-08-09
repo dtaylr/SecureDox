@@ -1,0 +1,35 @@
+title = "SecureDox secret scanning policy"
+
+[allowlist]
+description = "Committed local-only demo credentials and deterministic fixture data."
+paths = [
+  '''^\.env\.example$''',
+  '''^docs/''',
+  '''^tests/fixtures/''',
+  '''^tests/helpers/document_factory\.py$''',
+  '''^packages/test-framework/src/fixtures/document\.fixture\.ts$''',
+]
+regexes = [
+  '''local-dev-only-not-a-real-secret''',
+  '''securedox-demo''',
+  '''securedox_local_pw''',
+  '''000-00-0000''',
+]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API key assignment"
+regex = '''(?i)(api[_-]?key|secret[_-]?key|access[_-]?token|auth[_-]?token)\s*[:=]\s*['"][A-Za-z0-9_\-]{20,}['"]'''
+tags = ["key", "generic"]
+
+[[rules]]
+id = "jwt"
+description = "JWT-like token"
+regex = '''eyJ[A-Za-z0-9_\-]+\.eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+'''
+tags = ["jwt"]
+
+[[rules]]
+id = "private-key"
+description = "Private key material"
+regex = '''-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----'''
+tags = ["key", "private"]

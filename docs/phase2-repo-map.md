@@ -80,3 +80,45 @@ Default tenant for the seeded demo path is `acme-lending`.
 - `tests/fixtures`: deterministic document fixtures with embedded mock OCR
   payloads.
 - `tests/reports`: generated JSON/JUnit/Playwright output target.
+
+## Phase 4 DevSecOps
+
+- Pre-commit: `.pre-commit-config.yaml`, with hygiene hooks, Gitleaks,
+  Semgrep, Hadolint, and repo-local approval/commit-message guards.
+- Security policies: `security/policies/dependency-policy.yml`,
+  `security/policies/container-policy.yml`, and
+  `security/policies/release-security-policy.yml`.
+- Scanner configs: `security/gitleaks/gitleaks.toml`,
+  `security/semgrep/rules.yml`, and `security/trivy/trivy.yaml`.
+- Scripts: `scripts/generate-sbom.sh`, `scripts/run-dependency-audit.sh`,
+  `scripts/scan-container.sh`, and `scripts/security-release-gate.ts`.
+- CI workflow: `.github/workflows/security-gates.yml`.
+- Docker hardening: API, worker, and web images run as non-root users and have
+  deterministic local image names for scanning.
+- Security tests: Python smoke under `tests/security/test_authentication.py`
+  plus Playwright specs under `tests/security/specs/`.
+
+Primary commands:
+
+- `make security`: secrets, SAST, SCA, dependency audit, SBOM, Dockerfile lint.
+- `make image-scan`: build and scan local API/worker/web images.
+- `make test-security`: pytest security smoke plus Playwright security specs.
+- `yarn gate:security`: evaluate required security evidence.
+
+## Phase 5 Release Readiness
+
+- Risk strategy docs:
+  `docs/qa-strategy/risk-based-test-strategy.md`,
+  `docs/qa-strategy/release-gates.md`,
+  `docs/security/security-release-gates.md`, and
+  `docs/system-design/release-governance.md`.
+- Machine-readable risk model:
+  `security/policies/risk-model.yml`.
+- Release readiness script:
+  `scripts/release-readiness.ts`.
+- CI workflow:
+  `.github/workflows/release-gates.yml`.
+- Primary command:
+  `yarn gate:release`.
+- Output artifact:
+  `reports/release-readiness.json`.

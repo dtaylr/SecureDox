@@ -26,6 +26,7 @@ services:
       retries: 20
 
   api:
+    image: securedox/api:local
     build:
       context: ../..
       dockerfile: apps/api/Dockerfile
@@ -72,6 +73,7 @@ services:
       retries: 20
 
   worker:
+    image: securedox/worker:local
     build:
       context: ../..
       dockerfile: apps/worker/Dockerfile
@@ -114,6 +116,7 @@ services:
       retries: 20
 
   web:
+    image: securedox/web:local
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile

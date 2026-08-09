@@ -1,0 +1,36 @@
+version: 1
+name: securedox-risk-model
+
+risk_tiers:
+  P0:
+    description: Blocks release when failing or missing.
+    areas:
+      - authentication
+      - tenant_isolation
+      - critical_path_intake
+      - audit_integrity
+      - secret_scanning
+      - critical_vulnerabilities
+      - sbom
+  P1:
+    description: Blocks planned release unless explicitly waived.
+    areas:
+      - broader_document_coverage
+      - worker_retries
+      - cross_browser_smoke
+      - performance_regression
+  P2:
+    description: Tracked for hardening and trend analysis.
+    areas:
+      - visual_regression
+      - exploratory_edge_cases
+      - extended_chaos
+
+release_thresholds:
+  critical_path_pass_rate_percent: 100
+  max_flake_rate_percent: 2.0
+  max_p95_upload_latency_ms: 800
+  max_error_rate_percent: 1.0
+  max_critical_dependency_vulns: 0
+  max_critical_container_vulns: 0
+  secrets_allowed: 0

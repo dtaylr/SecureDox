@@ -26,7 +26,7 @@ def test_user_can_upload_process_review_and_submit(admin_api: ApiClient) -> None
     assert processing["status"] in {"QUEUED", "EXTRACTING", "VALIDATING", "VALIDATED"}
 
     review = wait_for_review_required(admin_api, document_id)
-    assert review["status"] in {"VALIDATED", "REJECTED"}
+    assert review["status"] in {"REVIEW_REQUIRED", "VALIDATED", "REJECTED"}
     assert review["extracted_fields"]
 
     submitted = admin_api.submit_document(document_id)

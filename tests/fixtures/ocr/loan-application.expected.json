@@ -1,0 +1,13 @@
+{
+  "document_type": "LOAN",
+  "provider": "mock",
+  "fields": {
+    "applicant_name": "Jordan Rivera",
+    "ssn": "000-00-0000",
+    "loan_amount": "$45,000.00",
+    "application_date": "2026-01-15",
+    "employer": "Contoso Manufacturing"
+  },
+  "min_confidence": 0.9,
+  "expected_status": "VALIDATED"
+}

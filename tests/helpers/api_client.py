@@ -59,10 +59,73 @@ class ApiClient:
         response.raise_for_status()
         return dict(response.json())
 
+    def get_document_response(self, document_id: str) -> httpx.Response:
+        return httpx.get(
+            f"{self.base_url}/api/v1/documents/{document_id}",
+            headers=self._headers(),
+            timeout=10,
+        )
+
+    def review_document_response(
+        self,
+        document_id: str,
+        *,
+        note: str,
+        corrections: list[dict[str, str]] | None = None,
+    ) -> httpx.Response:
+        return httpx.patch(
+            f"{self.base_url}/api/v1/documents/{document_id}/review",
+            json={"note": note, "corrections": corrections or []},
+            headers=self._headers(),
+            timeout=10,
+        )
+
+    def review_document(
+        self,
+        document_id: str,
+        *,
+        note: str = "Reviewed by pytest",
+        corrections: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
+        response = self.review_document_response(
+            document_id,
+            note=note,
+            corrections=corrections,
+        )
+        response.raise_for_status()
+        return dict(response.json())
+
     def submit_document(self, document_id: str, note: str = "pytest smoke review") -> dict[str, Any]:
         response = httpx.post(
             f"{self.base_url}/api/v1/documents/{document_id}/submit",
             json={"note": note},
+            headers=self._headers(),
+            timeout=10,
+        )
+        response.raise_for_status()
+        return dict(response.json())
+
+    def submit_document_response(
+        self, document_id: str, note: str = "pytest smoke review"
+    ) -> httpx.Response:
+        return httpx.post(
+            f"{self.base_url}/api/v1/documents/{document_id}/submit",
+            json={"note": note},
+            headers=self._headers(),
+            timeout=10,
+        )
+
+    def list_audit_logs(
+        self, *, document_id: str | None = None, action: str | None = None
+    ) -> dict[str, Any]:
+        params: dict[str, str] = {}
+        if document_id:
+            params["document_id"] = document_id
+        if action:
+            params["action"] = action
+        response = httpx.get(
+            f"{self.base_url}/api/v1/audit-logs",
+            params=params,
             headers=self._headers(),
             timeout=10,
         )
@@ -74,6 +137,15 @@ class ApiClient:
             f"{self.base_url}/api/v1/documents",
             data={"document_type": fixture.document_type},
             files={"file": (fixture.filename, fixture.content, fixture.mime_type)},
+            timeout=20,
+        )
+
+    def upload_document_response(self, fixture: DocumentFixture) -> httpx.Response:
+        return httpx.post(
+            f"{self.base_url}/api/v1/documents",
+            data={"document_type": fixture.document_type},
+            files={"file": (fixture.filename, fixture.content, fixture.mime_type)},
+            headers=self._headers(),
             timeout=20,
         )
 

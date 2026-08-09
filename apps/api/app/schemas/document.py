@@ -119,6 +119,13 @@ class DocumentDetail(DocumentSummary):
         """Rule ids that caused a rejection — the "why" a reviewer needs first."""
         return [r.rule_id for r in self.validation_results if r.is_blocking]
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def needs_manual_review(self) -> bool:
+        return self.status == DocumentStatus.REVIEW_REQUIRED or any(
+            field.low_confidence for field in self.extracted_fields
+        )
+
 
 class FieldCorrection(BaseModel):
     """A human overriding an OCR value.
@@ -145,6 +152,24 @@ class DocumentSubmitRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     note: str | None = Field(default=None, max_length=500)
+
+
+class DocumentReviewRequest(BaseModel):
+    """Reviewer edits made before final submission."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    note: str = Field(min_length=3, max_length=500)
+    corrections: list[FieldCorrection] = Field(default_factory=list, max_length=25)
+
+
+class DocumentReviewResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: uuid.UUID
+    status: DocumentStatus
+    needs_manual_review: bool
+    corrections_applied: int
 
 
 class DocumentSubmitResponse(BaseModel):

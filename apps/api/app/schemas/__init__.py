@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .auth import LoginRequest, PrincipalOut, TokenResponse
+from .audit import AuditEventOut
 from .common import (
     ErrorBody,
     ErrorDetail,
@@ -15,7 +16,11 @@ from .common import (
 from .document import (
     DocumentDetail,
     DocumentListQuery,
+    DocumentReviewRequest,
+    DocumentReviewResponse,
     DocumentSummary,
+    DocumentSubmitRequest,
+    DocumentSubmitResponse,
     DocumentUploadResponse,
     ExtractedFieldOut,
     FieldCorrection,
@@ -25,8 +30,13 @@ from .document import (
 __all__ = [
     "DocumentDetail",
     "DocumentListQuery",
+    "DocumentReviewRequest",
+    "DocumentReviewResponse",
     "DocumentSummary",
+    "DocumentSubmitRequest",
+    "DocumentSubmitResponse",
     "DocumentUploadResponse",
+    "AuditEventOut",
     "ErrorBody",
     "ErrorDetail",
     "ErrorResponse",

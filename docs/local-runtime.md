@@ -50,6 +50,7 @@ With the stack running:
 make test-api
 make test-db
 make test-security
+make test-ocr
 yarn test:e2e
 ```
 

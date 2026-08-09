@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import admin, auth, documents, health
+from app.api.v1 import admin, audit_logs, auth, documents, health
 
 router = APIRouter()
 
@@ -20,6 +20,7 @@ root_router.include_router(health.router)
 
 router.include_router(auth.router)
 router.include_router(documents.router)
+router.include_router(audit_logs.router)
 router.include_router(admin.router)
 
 __all__ = ["root_router", "router"]

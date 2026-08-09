@@ -1,0 +1,12 @@
+{
+  "document_type": "MEDICAL",
+  "provider": "mock",
+  "fields": {
+    "patient_mrn": "MRN1234567",
+    "patient_name": "Alex Chen",
+    "date_of_service": "2026-01-20",
+    "provider_npi": "1234567890"
+  },
+  "min_confidence": 0.9,
+  "expected_status": "VALIDATED"
+}

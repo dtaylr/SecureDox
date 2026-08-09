@@ -21,7 +21,7 @@ class DocumentType(StrEnum):
 class DocumentStatus(StrEnum):
     """Intake state machine.
 
-    RECEIVED -> QUEUED -> EXTRACTING -> VALIDATING -> VALIDATED | REJECTED
+    RECEIVED -> QUEUED -> EXTRACTING -> VALIDATING -> REVIEW_REQUIRED | VALIDATED | REJECTED
     Any state may fall to FAILED on an unrecoverable error; QUARANTINED is a
     terminal state reserved for files that fail the malware/mime gate.
     """
@@ -30,6 +30,7 @@ class DocumentStatus(StrEnum):
     QUEUED = "QUEUED"
     EXTRACTING = "EXTRACTING"
     VALIDATING = "VALIDATING"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
     VALIDATED = "VALIDATED"
     REJECTED = "REJECTED"
     FAILED = "FAILED"
@@ -43,6 +44,7 @@ class DocumentStatus(StrEnum):
 _TERMINAL_STATUSES = frozenset(
     {
         DocumentStatus.VALIDATED,
+        DocumentStatus.REVIEW_REQUIRED,
         DocumentStatus.REJECTED,
         DocumentStatus.FAILED,
         DocumentStatus.QUARANTINED,
@@ -58,8 +60,14 @@ ALLOWED_TRANSITIONS: dict[DocumentStatus, frozenset[DocumentStatus]] = {
     DocumentStatus.QUEUED: frozenset({DocumentStatus.EXTRACTING, DocumentStatus.FAILED}),
     DocumentStatus.EXTRACTING: frozenset({DocumentStatus.VALIDATING, DocumentStatus.FAILED}),
     DocumentStatus.VALIDATING: frozenset(
-        {DocumentStatus.VALIDATED, DocumentStatus.REJECTED, DocumentStatus.FAILED}
+        {
+            DocumentStatus.REVIEW_REQUIRED,
+            DocumentStatus.VALIDATED,
+            DocumentStatus.REJECTED,
+            DocumentStatus.FAILED,
+        }
     ),
+    DocumentStatus.REVIEW_REQUIRED: frozenset({DocumentStatus.VALIDATED, DocumentStatus.REJECTED}),
     DocumentStatus.VALIDATED: frozenset(),
     DocumentStatus.REJECTED: frozenset(),
     DocumentStatus.FAILED: frozenset({DocumentStatus.QUEUED}),  # operator-triggered replay

@@ -24,6 +24,7 @@ type DocumentStatus =
   | "QUEUED"
   | "EXTRACTING"
   | "VALIDATING"
+  | "REVIEW_REQUIRED"
   | "VALIDATED"
   | "REJECTED"
   | "FAILED"
@@ -68,6 +69,7 @@ type DocumentDetail = DocumentSummary & {
   page_count: number | null;
   ocr_provider: string | null;
   rejection_reason: string | null;
+  needs_manual_review: boolean;
   extracted_fields: ExtractedField[];
   validation_results: ValidationResult[];
 };
@@ -100,7 +102,9 @@ type ApiError = {
 function statusTone(status: DocumentStatus): string {
   if (status === "VALIDATED") return "good";
   if (status === "REJECTED" || status === "FAILED" || status === "QUARANTINED") return "bad";
-  if (status === "EXTRACTING" || status === "VALIDATING") return "busy";
+  if (status === "EXTRACTING" || status === "VALIDATING" || status === "REVIEW_REQUIRED") {
+    return "busy";
+  }
   return "plain";
 }
 

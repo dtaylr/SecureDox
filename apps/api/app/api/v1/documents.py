@@ -17,6 +17,8 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Query, Response, UploadFile, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
     CorrelationDep,
@@ -33,10 +35,12 @@ from app.core.errors import (
     ValidationError,
 )
 from app.core.security import ROLE_ADMIN, ROLE_REVIEWER, ROLE_UPLOADER, Principal
-from app.models import ExtractedField
+from app.models import AuditEvent, Document, ExtractedField
 from app.schemas.common import Page, PageMeta
 from app.schemas.document import (
     DocumentDetail,
+    DocumentReviewRequest,
+    DocumentReviewResponse,
     DocumentSubmitRequest,
     DocumentSubmitResponse,
     DocumentSummary,
@@ -227,6 +231,82 @@ async def correct_field(
     return out.model_copy(update={"was_corrected": True})
 
 
+async def _apply_field_correction(
+    *,
+    session: AsyncSession,
+    principal: Principal,
+    correlation_id: str,
+    document: Document,
+    correction: FieldCorrection,
+) -> ExtractedField:
+    field = next(
+        (f for f in document.extracted_fields if f.field_name == correction.field_name),
+        None,
+    )
+    if field is None:
+        raise NotFoundError(f"No extracted field named {correction.field_name!r}.")
+    if document.status == DocumentStatus.QUARANTINED:
+        raise ValidationError("A quarantined document cannot be edited.")
+
+    if field.original_value is None:
+        field.original_value = field.value
+    field.value = correction.value
+    field.source = FieldSource.MANUAL
+    field.is_pii = ExtractedField.flag_pii(field.field_name)
+
+    await AuditService(session).record(
+        action=AuditAction.FIELD_CORRECTED,
+        tenant_id=principal.tenant_id,
+        correlation_id=correlation_id,
+        actor=principal.subject,
+        document_id=document.id,
+        detail={"field_name": field.field_name, "reason": correction.reason},
+    )
+    return field
+
+
+@router.patch(
+    "/{document_id}/review",
+    response_model=DocumentReviewResponse,
+    summary="Apply reviewer corrections",
+)
+async def review_document(
+    principal: Annotated[Principal, require_roles(ROLE_REVIEWER, ROLE_ADMIN)],
+    session: SessionDep,
+    correlation_id: CorrelationDep,
+    document_id: uuid.UUID,
+    payload: DocumentReviewRequest,
+) -> DocumentReviewResponse:
+    """Apply bounded reviewer corrections without final submission."""
+    repo = DocumentRepository(session)
+    document = await repo.get(document_id, tenant_id=principal.tenant_id)
+
+    if document.status not in (
+        DocumentStatus.REVIEW_REQUIRED,
+        DocumentStatus.VALIDATED,
+        DocumentStatus.REJECTED,
+    ):
+        raise InvalidStateTransitionError("Only processed documents can be reviewed.")
+
+    for correction in payload.corrections:
+        await _apply_field_correction(
+            session=session,
+            principal=principal,
+            correlation_id=correlation_id,
+            document=document,
+            correction=correction,
+        )
+    await session.flush()
+
+    detail = DocumentDetail.model_validate(document)
+    return DocumentReviewResponse(
+        id=document.id,
+        status=document.status,
+        needs_manual_review=detail.needs_manual_review,
+        corrections_applied=len(payload.corrections),
+    )
+
+
 @router.post(
     "/{document_id}/submit",
     response_model=DocumentSubmitResponse,
@@ -243,10 +323,35 @@ async def submit_reviewed_document(
     repo = DocumentRepository(session)
     document = await repo.get(document_id, tenant_id=principal.tenant_id)
 
-    if document.status not in (DocumentStatus.VALIDATED, DocumentStatus.REJECTED):
+    already_submitted = (
+        await session.execute(
+            select(AuditEvent.id)
+            .where(
+                AuditEvent.tenant_id == principal.tenant_id,
+                AuditEvent.document_id == document.id,
+                AuditEvent.action == AuditAction.DOCUMENT_SUBMITTED,
+            )
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if already_submitted is not None:
+        raise InvalidStateTransitionError("This document has already been submitted.")
+
+    if document.status not in (
+        DocumentStatus.REVIEW_REQUIRED,
+        DocumentStatus.VALIDATED,
+        DocumentStatus.REJECTED,
+    ):
         raise InvalidStateTransitionError(
             "Only processed documents can be submitted from review."
         )
+
+    previous_status = document.status
+    if document.status == DocumentStatus.REVIEW_REQUIRED:
+        if not document.can_move_to(DocumentStatus.VALIDATED):
+            raise InvalidStateTransitionError("This document cannot be validated from review.")
+        document.status = DocumentStatus.VALIDATED
+        await session.flush()
 
     event = await AuditService(session).record(
         action=AuditAction.DOCUMENT_SUBMITTED,
@@ -254,7 +359,11 @@ async def submit_reviewed_document(
         correlation_id=correlation_id,
         actor=principal.subject,
         document_id=document.id,
-        detail={"status": document.status.value, "note": payload.note},
+        detail={
+            "previous_status": previous_status.value,
+            "status": document.status.value,
+            "note": payload.note,
+        },
     )
     await session.flush()
 

@@ -11,6 +11,7 @@ type ReleaseReadiness = {
     max_p95_latency_ms: number;
     max_error_rate: string;
     min_critical_path_pass_rate: string;
+    max_ocr_p95_latency_ms: number;
   };
   quality: {
     critical_path_pass_rate: string;
@@ -33,6 +34,8 @@ type ReleaseReadiness = {
     p95_upload_latency_ms: number | null;
     error_rate: string;
     audit_log_validation: "passed" | "failed" | "missing";
+    ocr_p95_latency_ms: number | null;
+    ocr_quality: "passed" | "failed" | "missing";
   };
   data_integrity: {
     db_smoke: "passed" | "failed" | "missing";
@@ -60,6 +63,7 @@ const noFail = process.argv.includes("--no-fail");
 const thresholds = {
   maxFlakeRate: envNumber("GATE_MAX_FLAKE_RATE", 2.0),
   maxP95LatencyMs: envNumber("GATE_MAX_P95_MS", 800),
+  maxOcrP95LatencyMs: envNumber("GATE_MAX_OCR_P95_MS", 5_000),
   maxErrorRate: envNumber("GATE_MAX_ERROR_RATE", 1.0),
   minCriticalPathPassRate: envNumber("GATE_MIN_CRITICAL_PATH_PASS_RATE", 100)
 };
@@ -68,6 +72,7 @@ const evidence = {
   junitApi: "reports/junit-api.xml",
   junitDb: "reports/junit-db.xml",
   junitSecurity: "reports/junit-security.xml",
+  junitOcr: "reports/junit-ocr.xml",
   junitContract: "reports/junit-contract.xml",
   playwrightE2e: "tests/reports/playwright-results.json",
   playwrightSecurity: "tests/reports/security-playwright-results.json",
@@ -78,6 +83,7 @@ const evidence = {
   sbomCycloneDx: "security/sbom/securedox-source.cdx.json",
   sbomSpdx: "security/sbom/securedox-source.spdx.json",
   performance: "reports/performance-summary.json",
+  ocrQuality: "tests/reports/ocr-quality-summary.json",
   flake: "reports/flake-summary.json",
   audit: "tests/reports/api-smoke.json"
 };
@@ -85,11 +91,12 @@ const evidence = {
 const api = readJUnit(evidence.junitApi);
 const db = readJUnit(evidence.junitDb);
 const securityPy = readJUnit(evidence.junitSecurity);
+const ocr = readJUnit(evidence.junitOcr);
 const contract = readJUnit(evidence.junitContract);
 const e2e = readPlaywright(evidence.playwrightE2e);
 const securityTs = readPlaywright(evidence.playwrightSecurity);
 
-const criticalTotals = sumTests(api, e2e);
+const criticalTotals = sumTests(api, e2e, ocr);
 const criticalPassRate =
   criticalTotals.total === 0
     ? null
@@ -97,6 +104,7 @@ const criticalPassRate =
 
 const flakeRate = readFlakeRate(evidence.flake);
 const performance = readPerformance(evidence.performance);
+const ocrQuality = readOcrQuality(evidence.ocrQuality);
 const secretsFound = countSarifResults(evidence.gitleaks);
 const sastBlockers = countSarifResults(evidence.semgrep, ["error"]);
 const dependencyCriticals = countTrivyCriticals(evidence.trivyFs);
@@ -126,6 +134,7 @@ blockOn(
   `Critical path pass rate is below ${thresholds.minCriticalPathPassRate}%`
 );
 blockOn(contract.status !== "passed", "Contract tests are not passing");
+blockOn(ocr.status !== "passed", "OCR validation tests are not passing");
 blockOn(idorStatus !== "passed", "IDOR/security access test is not passing");
 blockOn(uploadValidationStatus !== "passed", "Upload validation security test is not passing");
 blockOn(logRedactionStatus === "failed", "Sensitive log leakage is detected");
@@ -158,12 +167,19 @@ if (
   );
 }
 blockOn(flakeRate !== null && flakeRate > thresholds.maxFlakeRate, "Flake rate exceeds threshold");
+blockOn(
+  ocrQuality.p95OcrLatencyMs !== null &&
+    ocrQuality.p95OcrLatencyMs > thresholds.maxOcrP95LatencyMs,
+  `OCR p95 latency ${ocrQuality.p95OcrLatencyMs}ms exceeds ${thresholds.maxOcrP95LatencyMs}ms`
+);
+blockOn(ocrQuality.status === "failed", "OCR quality validation failed");
 blockOn(db.status === "failed", "DB/data integrity smoke test failed");
 blockOn(auditSequenceStatus !== "passed", "Audit log validation failed or is missing");
 blockOn(unapprovedGeneratedTests > 0, `${unapprovedGeneratedTests} AI-generated test(s) lack review approval`);
 
 warnOn(securityPy.status === "missing", "Python security smoke evidence is missing");
 warnOn(performance.p95UploadLatencyMs === null, "Performance evidence is missing");
+warnOn(ocrQuality.status === "missing", "OCR quality evidence is missing");
 warnOn(flakeRate === null, "Flake-rate evidence is missing");
 
 const readiness: ReleaseReadiness = {
@@ -173,13 +189,14 @@ const readiness: ReleaseReadiness = {
     max_flake_rate: formatPercent(thresholds.maxFlakeRate),
     max_p95_latency_ms: thresholds.maxP95LatencyMs,
     max_error_rate: formatPercent(thresholds.maxErrorRate),
-    min_critical_path_pass_rate: formatPercent(thresholds.minCriticalPathPassRate)
+    min_critical_path_pass_rate: formatPercent(thresholds.minCriticalPathPassRate),
+    max_ocr_p95_latency_ms: thresholds.maxOcrP95LatencyMs
   },
   quality: {
     critical_path_pass_rate: criticalPassRate === null ? "missing" : formatPercent(criticalPassRate),
     flake_rate: flakeRate === null ? "missing" : formatPercent(flakeRate),
     contract_tests: contract.status,
-    critical_path_tests: summarizeStatus(api, e2e),
+    critical_path_tests: summarizeStatus(api, e2e, ocr),
     total_tests: criticalTotals.total,
     failed_tests: criticalTotals.failed
   },
@@ -200,7 +217,9 @@ const readiness: ReleaseReadiness = {
   reliability: {
     p95_upload_latency_ms: performance.p95UploadLatencyMs,
     error_rate: performance.errorRatePercent === null ? "missing" : formatPercent(performance.errorRatePercent),
-    audit_log_validation: auditSequenceStatus
+    audit_log_validation: auditSequenceStatus,
+    ocr_p95_latency_ms: ocrQuality.p95OcrLatencyMs,
+    ocr_quality: ocrQuality.status
   },
   data_integrity: {
     db_smoke: db.status,
@@ -288,6 +307,20 @@ function readFlakeRate(path: string): number | null {
     return null;
   }
   return parsePercent(report.flake_rate ?? report.flakeRatePercent);
+}
+
+function readOcrQuality(path: string): {
+  p95OcrLatencyMs: number | null;
+  status: "passed" | "failed" | "missing";
+} {
+  const report = readJson<{ p95_ocr_latency_ms?: number; status?: string }>(path);
+  if (!report) {
+    return { p95OcrLatencyMs: null, status: "missing" };
+  }
+  return {
+    p95OcrLatencyMs: report.p95_ocr_latency_ms ?? null,
+    status: report.status === "passed" ? "passed" : "failed"
+  };
 }
 
 function countSarifResults(path: string, levels?: string[]): number {

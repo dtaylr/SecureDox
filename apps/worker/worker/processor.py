@@ -119,9 +119,11 @@ class DocumentProcessor:
         metrics.processing_duration_seconds.labels(
             document_type=document.document_type.value
         ).observe(duration)
-        metrics.jobs_processed_total.labels(
-            outcome="validated" if verdict == DocumentStatus.VALIDATED else "rejected"
-        ).inc()
+        outcome = {
+            DocumentStatus.VALIDATED: "validated",
+            DocumentStatus.REVIEW_REQUIRED: "review_required",
+        }.get(verdict, "rejected")
+        metrics.jobs_processed_total.labels(outcome=outcome).inc()
 
         return ProcessingOutcome(document.id, verdict, duration)
 

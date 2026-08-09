@@ -1,0 +1,12 @@
+{
+  "document_type": "INSURANCE",
+  "provider": "mock",
+  "fields": {
+    "policy_number": "AB-1234567",
+    "insured_name": "Sam Okafor",
+    "effective_date": "2026-02-01",
+    "claim_amount": "$1,250.00"
+  },
+  "min_confidence": 0.9,
+  "expected_status": "VALIDATED"
+}

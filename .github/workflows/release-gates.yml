@@ -38,6 +38,8 @@ jobs:
           .venv/bin/python -m pytest tests/api -v --junitxml=reports/junit-api.xml
           .venv/bin/python -m pytest tests/db -v --junitxml=reports/junit-db.xml
           .venv/bin/python -m pytest tests/security -v --junitxml=reports/junit-security.xml
+          .venv/bin/python -m pytest tests/ocr -v --junitxml=reports/junit-ocr.xml
+          yarn test:contract
 
       - name: Generate release readiness summary
         run: yarn gate:release

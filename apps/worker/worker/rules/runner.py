@@ -64,6 +64,14 @@ class RuleRunner:
 
         low_confidence = self._low_confidence_fields(evaluation, extraction)
 
+        if evaluation.is_accepted and low_confidence:
+            return ValidationVerdict(
+                evaluation=evaluation,
+                status=DocumentStatus.REVIEW_REQUIRED,
+                rejection_reason="Manual review required for low-confidence OCR fields.",
+                low_confidence_fields=low_confidence,
+            )
+
         if evaluation.is_accepted:
             return ValidationVerdict(
                 evaluation=evaluation,

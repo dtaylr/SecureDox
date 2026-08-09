@@ -3,6 +3,7 @@ export type DocumentStatus =
   | "QUEUED"
   | "EXTRACTING"
   | "VALIDATING"
+  | "REVIEW_REQUIRED"
   | "VALIDATED"
   | "REJECTED"
   | "FAILED"
@@ -26,6 +27,15 @@ export type DocumentSummary = {
   processed_at: string | null;
 };
 
+export type ErrorResponse = {
+  error: {
+    code: string;
+    message: string;
+    correlation_id: string;
+    details: Array<{ field: string | null; rule_id?: string | null; message: string }>;
+  };
+};
+
 export type ExtractedField = {
   field_name: string;
   value: string | null;
@@ -41,6 +51,7 @@ export type DocumentDetail = DocumentSummary & {
   page_count: number | null;
   ocr_provider: string | null;
   rejection_reason: string | null;
+  needs_manual_review: boolean;
   extracted_fields: ExtractedField[];
   validation_results: Array<{
     rule_id: string;
@@ -57,6 +68,16 @@ export type UploadResult = {
   status: DocumentStatus;
   document_type: string;
   correlation_id: string;
+};
+
+export type AuditEvent = {
+  id: string;
+  document_id: string | null;
+  action: string;
+  actor: string;
+  correlation_id: string;
+  detail: Record<string, unknown>;
+  created_at: string;
 };
 
 export type AdminStatus = {
@@ -79,7 +100,8 @@ export class ApiError extends Error {
     message: string,
     readonly status: number,
     readonly code?: string,
-    readonly correlationId?: string
+    readonly correlationId?: string,
+    readonly details: ErrorResponse["error"]["details"] = []
   ) {
     super(message);
   }
@@ -138,11 +160,46 @@ export class ApiClient {
     return this.request<DocumentDetail>(`/api/v1/documents/${documentId}`);
   }
 
+  async reviewDocument(
+    documentId: string,
+    input: {
+      note: string;
+      corrections?: Array<{ field_name: string; value: string; reason: string }>;
+    }
+  ): Promise<{
+    id: string;
+    status: DocumentStatus;
+    needs_manual_review: boolean;
+    corrections_applied: number;
+  }> {
+    return this.request(`/api/v1/documents/${documentId}/review`, {
+      method: "PATCH",
+      json: { note: input.note, corrections: input.corrections ?? [] }
+    });
+  }
+
   async submitDocument(documentId: string, note = "Submitted by smoke test"): Promise<void> {
     await this.request(`/api/v1/documents/${documentId}/submit`, {
       method: "POST",
       json: { note }
     });
+  }
+
+  async listAuditLogs(
+    options: { documentId?: string; action?: string } = {}
+  ): Promise<AuditEvent[]> {
+    const params = new URLSearchParams();
+    if (options.documentId) {
+      params.set("document_id", options.documentId);
+    }
+    if (options.action) {
+      params.set("action", options.action);
+    }
+    const query = params.toString();
+    const page = await this.request<{ items: AuditEvent[] }>(
+      `/api/v1/audit-logs${query ? `?${query}` : ""}`
+    );
+    return page.items;
   }
 
   async adminStatus(): Promise<AdminStatus> {
@@ -188,13 +245,14 @@ export class ApiClient {
   private async toError(response: Response): Promise<ApiError> {
     try {
       const body = (await response.json()) as {
-        error?: { code?: string; message?: string; correlation_id?: string };
+        error?: ErrorResponse["error"];
       };
       return new ApiError(
         body.error?.message ?? response.statusText,
         response.status,
         body.error?.code,
-        body.error?.correlation_id
+        body.error?.correlation_id,
+        body.error?.details ?? []
       );
     } catch {
       return new ApiError(response.statusText, response.status);

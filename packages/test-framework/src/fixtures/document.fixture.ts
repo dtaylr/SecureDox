@@ -4,6 +4,7 @@ export type DocumentFixture = {
   mimeType: "application/pdf";
   content: Buffer;
   fields: Record<string, string | null>;
+  confidences: Record<string, number>;
 };
 
 const defaultFields: Record<DocumentFixture["documentType"], Record<string, string | null>> = {
@@ -39,17 +40,20 @@ export function documentFixtureFactory(
     fields?: Record<string, string | null>;
     confidences?: Record<string, number>;
     uniqueSuffix?: string;
+    content?: Buffer;
   } = {}
 ): DocumentFixture {
   const documentType = overrides.documentType ?? "LOAN";
   const fields = overrides.fields ?? defaultFields[documentType];
   const suffix = overrides.uniqueSuffix ?? Date.now();
   const filename = overrides.filename ?? `smoke-${documentType.toLowerCase()}-${suffix}.pdf`;
+  const confidences =
+    overrides.confidences ?? Object.fromEntries(Object.keys(fields).map((key) => [key, 0.95]));
   const fixtureBlock = JSON.stringify({
     fields,
-    confidences: overrides.confidences ?? Object.fromEntries(Object.keys(fields).map((key) => [key, 0.95]))
+    confidences
   });
-  const content = Buffer.from(
+  const content = overrides.content ?? Buffer.from(
     `%PDF-1.4\n% SecureDox test fixture ${suffix}\nSECUREDOX-FIXTURE:${fixtureBlock}\n%%EOF\n`
   );
 
@@ -58,6 +62,7 @@ export function documentFixtureFactory(
     filename,
     mimeType: overrides.mimeType ?? "application/pdf",
     content,
-    fields
+    fields,
+    confidences
   };
 }

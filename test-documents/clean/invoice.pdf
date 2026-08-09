@@ -1,0 +1,4 @@
+%PDF-1.4
+% SecureDox invoice fixture mapped to insurance claim validation
+SECUREDOX-FIXTURE:{"fields":{"policy_number":"AB-1234567","insured_name":"Sam Okafor","effective_date":"2026-02-01","claim_amount":"$1,250.00"},"confidences":{"policy_number":0.95,"insured_name":0.95,"effective_date":0.94,"claim_amount":0.93}}
+%%EOF

@@ -15,6 +15,7 @@ class DocumentFixture:
     mime_type: str
     content: bytes
     fields: dict[str, str | None]
+    confidences: dict[str, float]
 
 
 DEFAULT_FIELDS: dict[DocumentType, dict[str, str | None]] = {
@@ -51,24 +52,30 @@ def document_fixture(
     *,
     unique_suffix: str | None = None,
     fields: dict[str, str | None] | None = None,
+    confidences: dict[str, float] | None = None,
+    content: bytes | None = None,
+    filename: str | None = None,
+    mime_type: str = "application/pdf",
 ) -> DocumentFixture:
     selected_fields = fields or DEFAULT_FIELDS[document_type]
+    selected_confidences = confidences or {field: 0.95 for field in selected_fields}
     fixture_block = json.dumps(
         {
             "fields": selected_fields,
-            "confidences": {field: 0.95 for field in selected_fields},
+            "confidences": selected_confidences,
         },
         separators=(",", ":"),
     )
     suffix = unique_suffix or str(time.time_ns())
-    content = (
+    built_content = content or (
         f"%PDF-1.4\n% SecureDox pytest fixture {suffix}\n"
         f"SECUREDOX-FIXTURE:{fixture_block}\n%%EOF\n"
     ).encode()
     return DocumentFixture(
         document_type=document_type,
-        filename=f"pytest-{document_type.lower()}-{suffix}.pdf",
-        mime_type="application/pdf",
-        content=content,
+        filename=filename or f"pytest-{document_type.lower()}-{suffix}.pdf",
+        mime_type=mime_type,
+        content=built_content,
         fields=selected_fields,
+        confidences=selected_confidences,
     )

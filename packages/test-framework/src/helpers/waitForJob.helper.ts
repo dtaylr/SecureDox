@@ -22,5 +22,5 @@ export async function waitForReviewReady(
   documentId: string,
   options: RetryOptions = {}
 ): Promise<DocumentDetail> {
-  return waitForDocumentStatus(api, documentId, ["VALIDATED", "REJECTED"], options);
+  return waitForDocumentStatus(api, documentId, ["REVIEW_REQUIRED", "VALIDATED", "REJECTED"], options);
 }

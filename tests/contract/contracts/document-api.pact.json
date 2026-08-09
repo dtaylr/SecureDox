@@ -1,0 +1,97 @@
+{
+  "consumer": {
+    "name": "securedox-web"
+  },
+  "provider": {
+    "name": "securedox-api"
+  },
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    },
+    "securedox": {
+      "phase": 7,
+      "purpose": "Document API boundary contract"
+    }
+  },
+  "interactions": [
+    {
+      "description": "frontend expects document status shape",
+      "providerState": "a document exists",
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "status": "REVIEW_REQUIRED",
+          "document_type": "LOAN",
+          "original_filename": "loan-application.pdf",
+          "size_bytes": 128,
+          "created_at": "2026-01-01T00:00:00Z",
+          "processed_at": "2026-01-01T00:00:03Z",
+          "mime_type": "application/pdf",
+          "correlation_id": "contract-document",
+          "page_count": 1,
+          "ocr_provider": "stubbed-fixture-ocr",
+          "rejection_reason": null,
+          "needs_manual_review": true,
+          "extracted_fields": [],
+          "validation_results": []
+        }
+      }
+    },
+    {
+      "description": "frontend expects OCR confidence field",
+      "providerState": "a document has OCR fields",
+      "response": {
+        "status": 200,
+        "body": {
+          "field_name": "applicant_name",
+          "value": "Jordan Rivera",
+          "display_value": "Jordan Rivera",
+          "confidence": 0.95,
+          "source": "OCR",
+          "is_pii": false
+        }
+      }
+    },
+    {
+      "description": "frontend expects validation error structure",
+      "providerState": "a request payload is invalid",
+      "response": {
+        "status": 422,
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "The request payload failed validation.",
+            "correlation_id": "contract-error",
+            "details": [
+              {
+                "field": "note",
+                "rule_id": null,
+                "message": "String should have at least 3 characters"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "frontend expects audit event shape",
+      "providerState": "audit events exist for a document",
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "document_id": "00000000-0000-4000-8000-000000000001",
+          "action": "DOCUMENT_UPLOADED",
+          "actor": "admin",
+          "correlation_id": "contract-document",
+          "detail": {
+            "filename": "loan-application.pdf"
+          },
+          "created_at": "2026-01-01T00:00:00Z"
+        }
+      }
+    }
+  ]
+}

@@ -33,6 +33,7 @@ DOCUMENT_STATUS = postgresql.ENUM(
     "QUEUED",
     "EXTRACTING",
     "VALIDATING",
+    "REVIEW_REQUIRED",
     "VALIDATED",
     "REJECTED",
     "FAILED",

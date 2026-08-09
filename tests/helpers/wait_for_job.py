@@ -17,6 +17,6 @@ def wait_for_processing_state(api: ApiClient, document_id: str) -> dict[str, Any
 def wait_for_review_required(api: ApiClient, document_id: str) -> dict[str, Any]:
     return wait_until(
         lambda: api.get_document(document_id),
-        lambda document: document["status"] in {"VALIDATED", "REJECTED"},
+        lambda document: document["status"] in {"REVIEW_REQUIRED", "VALIDATED", "REJECTED"},
         description=f"document {document_id} to be ready for review",
     )

@@ -30,6 +30,7 @@ release_thresholds:
   critical_path_pass_rate_percent: 100
   max_flake_rate_percent: 2.0
   max_p95_upload_latency_ms: 800
+  max_p95_ocr_latency_ms: 5000
   max_error_rate_percent: 1.0
   max_critical_dependency_vulns: 0
   max_critical_container_vulns: 0

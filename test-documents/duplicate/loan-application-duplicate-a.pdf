@@ -1,0 +1,4 @@
+%PDF-1.4
+% SecureDox duplicate fixture
+SECUREDOX-FIXTURE:{"fields":{"applicant_name":"Jordan Rivera","ssn":"000-00-0000","loan_amount":"$45,000.00","application_date":"2026-01-15","employer":"Contoso Manufacturing"},"confidences":{"applicant_name":0.96,"ssn":0.95,"loan_amount":0.94,"application_date":0.93,"employer":0.92}}
+%%EOF

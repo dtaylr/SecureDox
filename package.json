@@ -16,6 +16,7 @@
     "packages/observability/ts",
     "packages/test-framework",
     "tests/e2e",
+    "tests/contract",
     "tests/security",
     "tests/mobile-ui",
     "tests/architecture"
@@ -29,6 +30,7 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "test:e2e": "yarn workspace @securedox/e2e-tests test",
+    "test:contract": "yarn workspace @securedox/contract-tests test",
     "test:security": "yarn workspace @securedox/security-tests test",
     "test:bdd": "yarn workspace @securedox/e2e-tests test:bdd",
     "test:mobile:ui": "yarn workspace @securedox/mobile-ui-tests test",

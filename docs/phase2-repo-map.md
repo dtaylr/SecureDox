@@ -54,6 +54,7 @@ Created during phase 2 to avoid re-reading the whole repo on later turns.
 - `yarn test:e2e`: run Playwright smoke tests from `tests/e2e`.
 - `make test-api`: run pytest API smoke tests from `tests/api`.
 - `make test-db`: run pytest DB smoke tests from `tests/db`.
+- `make test-ocr`: run OCR/document validation tests from `tests/ocr`.
 
 ## Demo Users
 
@@ -80,6 +81,8 @@ Default tenant for the seeded demo path is `acme-lending`.
 - `tests/fixtures`: deterministic document fixtures with embedded mock OCR
   payloads.
 - `tests/reports`: generated JSON/JUnit/Playwright output target.
+- `tests/ocr`: OCR validation workflow tests using fixture documents under
+  `test-documents/`.
 
 ## Phase 4 DevSecOps
 
@@ -122,3 +125,33 @@ Primary commands:
   `yarn gate:release`.
 - Output artifact:
   `reports/release-readiness.json`.
+
+## Phase 6 OCR/Document Validation
+
+- OCR adapter: `apps/worker/worker/ocr/mock.py` supports embedded
+  `SECUREDOX-FIXTURE:` JSON blocks for deterministic extraction.
+- Manual review fallback: low-confidence but rule-passing documents move to
+  `REVIEW_REQUIRED`; reviewer submission moves them to `VALIDATED`.
+- Document test sets: `test-documents/{clean,rotated,blurry,low-contrast,missing-field,duplicate,invalid-format,malicious}`.
+- Expected OCR outputs: `tests/fixtures/ocr/*.expected.json`.
+- OCR tests: `tests/ocr/test_ocr_validation.py`.
+- OCR quality evidence: `tests/reports/ocr-quality-summary.json`.
+- Release readiness consumes `reports/junit-ocr.xml` and OCR quality evidence.
+
+## Phase 7 API, DB, and Contract Testing
+
+- API runtime additions: `GET /api/v1/audit-logs` is tenant-scoped, and
+  `PATCH /api/v1/documents/{id}/review` validates reviewer review payloads.
+- Duplicate reviewer submission is blocked by checking for an existing
+  `DOCUMENT_SUBMITTED` audit event.
+- Python API boundary tests: `tests/api/test_document_boundaries.py`.
+- Python DB integrity tests: `tests/db/test_integrity_boundaries.py`.
+- Python helpers now expose raw response methods for authz/negative API tests,
+  audit log listing, checksum lookup, extracted fields, and validation results.
+- Contract suite: `tests/contract/document-api.consumer.test.ts`,
+  `tests/contract/document-api.provider.test.ts`, and
+  `tests/contract/contracts/document-api.pact.json`.
+- Contract evidence command: `yarn test:contract`, wired through
+  `make test-contract` and `.github/workflows/release-gates.yml`.
+- Release readiness consumes contract evidence from `reports/junit-contract.xml`
+  alongside API and DB JUnit reports.

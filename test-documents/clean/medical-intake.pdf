@@ -1,0 +1,4 @@
+%PDF-1.4
+% SecureDox clean medical intake fixture
+SECUREDOX-FIXTURE:{"fields":{"patient_mrn":"MRN1234567","patient_name":"Alex Chen","date_of_service":"2026-01-20","provider_npi":"1234567890"},"confidences":{"patient_mrn":0.96,"patient_name":0.95,"date_of_service":0.94,"provider_npi":0.93}}
+%%EOF

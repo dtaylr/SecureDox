@@ -1,0 +1,4 @@
+%PDF-1.4
+% SecureDox rotated scan fixture
+SECUREDOX-FIXTURE:{"fields":{"applicant_name":"Jordan Rivera","ssn":"000-00-0000","loan_amount":"$45,000.00","application_date":"2026-01-15","employer":"Contoso Manufacturing"},"confidences":{"applicant_name":0.88,"ssn":0.86,"loan_amount":0.85,"application_date":0.84,"employer":0.82}}
+%%EOF

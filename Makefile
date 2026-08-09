@@ -80,7 +80,7 @@ psql: ## Open a psql shell
 # Test pyramid
 # ---------------------------------------------------------------------------
 .PHONY: test
-test: test-unit test-api test-db test-contract ## Fast suites run on every commit
+test: test-unit test-api test-db test-security test-contract ## Fast suites run on every commit
 
 .PHONY: test-unit
 test-unit: ## Service unit tests (api + worker)
@@ -96,6 +96,10 @@ test-api: ## API functional tests against the running stack
 test-db: ## Database rule/constraint/integrity validation
 	$(PY) -m pytest tests/db -v --junitxml=reports/junit-db.xml
 
+.PHONY: test-security
+test-security: ## Security smoke tests against the running stack
+	$(PY) -m pytest tests/security -v --junitxml=reports/junit-security.xml
+
 .PHONY: test-contract
 test-contract: ## Provider + consumer contract verification
 	$(PY) -m pytest tests/contract -v --junitxml=reports/junit-contract.xml
@@ -103,6 +107,9 @@ test-contract: ## Provider + consumer contract verification
 .PHONY: test-e2e
 test-e2e: ## Playwright end-to-end specs
 	yarn test:e2e
+
+.PHONY: test-smoke
+test-smoke: test-api test-db test-security test-e2e ## Critical phase-3 smoke suite
 
 .PHONY: test-bdd
 test-bdd: ## Cucumber feature files driven by Playwright

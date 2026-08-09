@@ -1,0 +1,153 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-securedox}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securedox_local_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-securedox}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - securedox-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      SECUREDOX_ENV: ${SECUREDOX_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://securedox:securedox_local_pw@postgres:5432/securedox}
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC:-postgresql+psycopg://securedox:securedox_local_pw@postgres:5432/securedox}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      QUEUE_NAME: ${QUEUE_NAME:-securedox:intake}
+      API_CORS_ORIGINS: ${API_CORS_ORIGINS:-http://localhost:3000,http://localhost:8080}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-local-dev-only-not-a-real-secret}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-securedox-local}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      STORAGE_LOCAL_PATH: ${STORAGE_LOCAL_PATH:-/var/lib/securedox/storage}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+      ALLOWED_MIME_TYPES: ${ALLOWED_MIME_TYPES:-application/pdf,image/png,image/jpeg,image/tiff}
+      OCR_PROVIDER: ${OCR_PROVIDER:-mock}
+      OCR_CONFIDENCE_THRESHOLD: ${OCR_CONFIDENCE_THRESHOLD:-0.80}
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m app.db.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - securedox-storage:/var/lib/securedox
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      SECUREDOX_ENV: ${SECUREDOX_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://securedox:securedox_local_pw@postgres:5432/securedox}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      QUEUE_NAME: ${QUEUE_NAME:-securedox:intake}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      STORAGE_LOCAL_PATH: ${STORAGE_LOCAL_PATH:-/var/lib/securedox/storage}
+      OCR_PROVIDER: ${OCR_PROVIDER:-mock}
+      OCR_VENDOR_URL: ${OCR_VENDOR_URL:-}
+      OCR_VENDOR_API_KEY: ${OCR_VENDOR_API_KEY:-}
+      OCR_TIMEOUT_SECONDS: ${OCR_TIMEOUT_SECONDS:-30}
+      OCR_CONFIDENCE_THRESHOLD: ${OCR_CONFIDENCE_THRESHOLD:-0.80}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+      WORKER_MAX_RETRIES: ${WORKER_MAX_RETRIES:-3}
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+    ports:
+      - "9100:9100"
+    volumes:
+      - securedox-storage:/var/lib/securedox
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import socket; s=socket.create_connection(('127.0.0.1', 9100), 2); s.close()"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    environment:
+      VITE_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+
+volumes:
+  securedox-postgres:
+  securedox-storage:

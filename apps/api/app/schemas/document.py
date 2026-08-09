@@ -139,6 +139,23 @@ class FieldCorrection(BaseModel):
         return self.field_name in PII_FIELDS
 
 
+class DocumentSubmitRequest(BaseModel):
+    """Reviewer attestation before the document leaves intake."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    note: str | None = Field(default=None, max_length=500)
+
+
+class DocumentSubmitResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: uuid.UUID
+    status: DocumentStatus
+    submitted: bool = True
+    audit_event_id: uuid.UUID
+
+
 class DocumentListQuery(BaseModel):
     """Validated query parameters for the list endpoint."""
 

@@ -1,0 +1,19 @@
+{
+  "name": "@securedox/e2e-tests",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:bdd": "playwright test --grep @bdd",
+    "show-report": "playwright show-report tests/reports/playwright-html"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.49.1",
+    "@securedox/test-framework": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

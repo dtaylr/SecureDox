@@ -74,7 +74,7 @@ def _json_object_after(data: bytes, offset: int) -> bytes | None:
 _DEFAULT_FIELDS: Final[dict[DocumentType, dict[str, str]]] = {
     DocumentType.LOAN: {
         "applicant_name": "Jordan Rivera",
-        "ssn": "123-45-6789",
+        "ssn": "000-00-0000",
         "loan_amount": "$45,000.00",
         "application_date": "2026-01-15",
         "employer": "Contoso Manufacturing",

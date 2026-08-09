@@ -26,12 +26,19 @@ from app.api.deps import (
     StorageDep,
     require_roles,
 )
-from app.core.errors import NotFoundError, PayloadTooLargeError, ValidationError
+from app.core.errors import (
+    InvalidStateTransitionError,
+    NotFoundError,
+    PayloadTooLargeError,
+    ValidationError,
+)
 from app.core.security import ROLE_ADMIN, ROLE_REVIEWER, ROLE_UPLOADER, Principal
 from app.models import ExtractedField
 from app.schemas.common import Page, PageMeta
 from app.schemas.document import (
     DocumentDetail,
+    DocumentSubmitRequest,
+    DocumentSubmitResponse,
     DocumentSummary,
     DocumentUploadResponse,
     ExtractedFieldOut,
@@ -218,3 +225,41 @@ async def correct_field(
 
     out = ExtractedFieldOut.model_validate(field)
     return out.model_copy(update={"was_corrected": True})
+
+
+@router.post(
+    "/{document_id}/submit",
+    response_model=DocumentSubmitResponse,
+    summary="Submit a reviewed document",
+)
+async def submit_reviewed_document(
+    principal: Annotated[Principal, require_roles(ROLE_REVIEWER, ROLE_ADMIN)],
+    session: SessionDep,
+    correlation_id: CorrelationDep,
+    document_id: uuid.UUID,
+    payload: DocumentSubmitRequest,
+) -> DocumentSubmitResponse:
+    """Record reviewer submission after OCR and validation have completed."""
+    repo = DocumentRepository(session)
+    document = await repo.get(document_id, tenant_id=principal.tenant_id)
+
+    if document.status not in (DocumentStatus.VALIDATED, DocumentStatus.REJECTED):
+        raise InvalidStateTransitionError(
+            "Only processed documents can be submitted from review."
+        )
+
+    event = await AuditService(session).record(
+        action=AuditAction.DOCUMENT_SUBMITTED,
+        tenant_id=principal.tenant_id,
+        correlation_id=correlation_id,
+        actor=principal.subject,
+        document_id=document.id,
+        detail={"status": document.status.value, "note": payload.note},
+    )
+    await session.flush()
+
+    return DocumentSubmitResponse(
+        id=document.id,
+        status=document.status,
+        audit_event_id=event.id,
+    )

@@ -1,4 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runConsumerContractTests } from "./document-api.consumer.test.js";
 import { runProviderContractTests } from "./document-api.provider.test.js";
 
@@ -23,6 +25,8 @@ const cases: ContractCase[] = [
     run: runProviderContractTests
   }
 ];
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -53,9 +57,10 @@ function writeJunit(results: ContractResult[]): void {
     })
     .join("");
 
-  mkdirSync("reports", { recursive: true });
+  const reportPath = resolve(repoRoot, "reports/junit-contract.xml");
+  mkdirSync(dirname(reportPath), { recursive: true });
   writeFileSync(
-    "reports/junit-contract.xml",
+    reportPath,
     `<testsuite name="securedox-contract" tests="${results.length}" failures="${failures.length}">${casesXml}</testsuite>\n`
   );
 }

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 mkdir -p reports
+printf '{"SchemaVersion":2,"Results":[]}' > reports/trivy-images.json
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker is required for container image scanning." >&2
@@ -15,16 +16,17 @@ fi
 docker compose -f infra/docker/docker-compose.yml --env-file .env build api worker web
 
 tmp_report="$(mktemp)"
-printf '{"SchemaVersion":2,"Results":[]}' > reports/trivy-images.json
+scan_status=0
 
 for image in securedox/api:local securedox/worker:local securedox/web:local; do
   trivy image \
     --config security/trivy/trivy.yaml \
     --format json \
     --output "$tmp_report" \
-    "$image"
+    "$image" || scan_status=$?
   node scripts/security/merge-trivy-reports.mjs reports/trivy-images.json "$tmp_report" "$image"
 done
 
 rm -f "$tmp_report"
 echo "Container scan report written to reports/trivy-images.json"
+exit "$scan_status"

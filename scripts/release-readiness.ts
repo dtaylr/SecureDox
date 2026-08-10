@@ -273,19 +273,58 @@ function readPlaywright(path: string): TestSummary {
 }
 
 function specStatus(path: string, specNamePart: string): "passed" | "failed" | "missing" {
-  const report = readJson<{ suites?: unknown[] }>(path);
+  const report = readJson<unknown>(path);
   if (!report) {
     return "missing";
   }
-  const specs = JSON.stringify(report)
-    .split('"title"')
-    .filter((chunk) => chunk.includes(specNamePart));
-  if (specs.length === 0) {
+  const matches = findPlaywrightNodes(report, specNamePart.toLowerCase());
+  if (matches.length === 0) {
     return "missing";
   }
-  return specs.some((chunk) => chunk.includes('"unexpected"') || chunk.includes('"failed"'))
-    ? "failed"
-    : "passed";
+  return matches.some(hasPlaywrightFailure) ? "failed" : "passed";
+}
+
+function findPlaywrightNodes(node: unknown, specNamePart: string): unknown[] {
+  if (!node || typeof node !== "object") {
+    return [];
+  }
+  if (Array.isArray(node)) {
+    return node.flatMap((item) => findPlaywrightNodes(item, specNamePart));
+  }
+
+  const object = node as Record<string, unknown>;
+  const descriptor = ["title", "file", "location"]
+    .map((key) => object[key])
+    .filter((value) => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+  if (descriptor.includes(specNamePart)) {
+    return [node];
+  }
+
+  return Object.values(object).flatMap((value) => findPlaywrightNodes(value, specNamePart));
+}
+
+function hasPlaywrightFailure(node: unknown): boolean {
+  if (!node || typeof node !== "object") {
+    return false;
+  }
+  if (Array.isArray(node)) {
+    return node.some(hasPlaywrightFailure);
+  }
+
+  const object = node as Record<string, unknown>;
+  const status = typeof object.status === "string" ? object.status.toLowerCase() : "";
+  const outcome = typeof object.outcome === "string" ? object.outcome.toLowerCase() : "";
+  if (["failed", "timedout", "interrupted"].includes(status) || outcome === "unexpected") {
+    return true;
+  }
+  if (typeof object.unexpected === "number" && object.unexpected > 0) {
+    return true;
+  }
+
+  return Object.values(object).some(hasPlaywrightFailure);
 }
 
 function readPerformance(path: string): {

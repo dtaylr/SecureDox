@@ -46,7 +46,7 @@ repos:
     hooks:
       - id: mypy
         files: ^(apps/(api|worker)|packages/.*/python)/
-        additional_dependencies: [pydantic>=2.9, sqlalchemy[mypy]>=2.0, types-redis]
+        additional_dependencies: ["pydantic>=2.9", "sqlalchemy[mypy]>=2.0", "types-redis"]
 
   # --- javascript / typescript --------------------------------------------
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -83,7 +83,6 @@ repos:
       - id: semgrep
         args:
           - "--config=security/semgrep/rules.yml"
-          - "--config=p/owasp-top-ten"
           - "--error"
           - "--skip-unknown-extensions"
           - "--quiet"

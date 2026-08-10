@@ -1,0 +1,9 @@
+misconfigurations:
+  # LOG_LEVEL is non-sensitive runtime configuration; keep it in the ConfigMap
+  # so log verbosity can be changed without secret rotation.
+  - id: KSV-01010
+    paths:
+      - infra/k8s/minikube/base/configmap.yaml
+      - k8s/minikube/base/configmap.yaml
+      - minikube/base/configmap.yaml
+      - configmap.yaml

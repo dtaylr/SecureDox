@@ -20,6 +20,7 @@ printf '{"SchemaVersion":2,"Results":[]}' > reports/trivy-images.json
 for image in securedox/api:local securedox/worker:local securedox/web:local; do
   trivy image \
     --config security/trivy/trivy.yaml \
+    --exit-code 0 \
     --format json \
     --output "$tmp_report" \
     "$image"

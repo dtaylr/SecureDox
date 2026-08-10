@@ -1,6 +1,14 @@
 import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runConsumerContractTests } from "./document-api.consumer.test.js";
 import { runProviderContractTests } from "./document-api.provider.test.js";
+
+// `yarn test:contract` runs with cwd=tests/contract, so the report path is
+// resolved against the repo root instead. Release readiness reads
+// reports/junit-contract.xml from the root.
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const junitPath = resolve(repoRoot, "reports/junit-contract.xml");
 
 type ContractCase = {
   name: string;
@@ -16,12 +24,12 @@ type ContractResult = {
 const cases: ContractCase[] = [
   {
     name: "document-api consumer contract",
-    run: runConsumerContractTests
+    run: runConsumerContractTests,
   },
   {
     name: "document-api provider contract",
-    run: runProviderContractTests
-  }
+    run: runProviderContractTests,
+  },
 ];
 
 function asError(error: unknown): Error {
@@ -44,19 +52,19 @@ function writeJunit(results: ContractResult[]): void {
       const seconds = (result.durationMs / 1000).toFixed(3);
       const failure = result.error
         ? `<failure message="${escapeXml(result.error.message)}">${escapeXml(
-            result.error.stack ?? result.error.message
+            result.error.stack ?? result.error.message,
           )}</failure>`
         : "";
       return `<testcase classname="securedox.contract" name="${escapeXml(
-        result.name
+        result.name,
       )}" time="${seconds}">${failure}</testcase>`;
     })
     .join("");
 
-  mkdirSync("reports", { recursive: true });
+  mkdirSync(dirname(junitPath), { recursive: true });
   writeFileSync(
-    "reports/junit-contract.xml",
-    `<testsuite name="securedox-contract" tests="${results.length}" failures="${failures.length}">${casesXml}</testsuite>\n`
+    junitPath,
+    `<testsuite name="securedox-contract" tests="${results.length}" failures="${failures.length}">${casesXml}</testsuite>\n`,
   );
 }
 
@@ -70,7 +78,7 @@ for (const testCase of cases) {
     results.push({
       name: testCase.name,
       durationMs: Date.now() - started,
-      error: asError(error)
+      error: asError(error),
     });
   }
 }

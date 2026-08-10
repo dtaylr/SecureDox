@@ -17,6 +17,9 @@ minikube start
 minikube addons enable ingress
 eval $(minikube docker-env)
 docker compose -f infra/docker/docker-compose.yml build api worker web
+docker tag securedox/api:local docker.io/securedox/api:local
+docker tag securedox/worker:local docker.io/securedox/worker:local
+docker tag securedox/web:local docker.io/securedox/web:local
 kubectl apply -k infra/k8s/minikube/base
 kubectl -n securedox get pods
 ```

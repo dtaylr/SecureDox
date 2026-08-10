@@ -197,6 +197,7 @@ sbom: ## Generate CycloneDX SBOMs for every artifact
 iac-scan: ## Terraform / Dockerfile / K8s misconfiguration scan
 	mkdir -p reports
 	trivy config --config security/trivy/trivy.yaml --format json \
+	  --config-data security/trivy/policy-data \
 	  --output reports/trivy-config.json infra/
 
 .PHONY: checkov

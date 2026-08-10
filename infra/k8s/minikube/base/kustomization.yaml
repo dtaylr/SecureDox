@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - secret.example.yaml
+  - storage.yaml
   - postgres.yaml
   - redis.yaml
   - api.yaml

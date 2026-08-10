@@ -9,7 +9,7 @@ locals {
     allowed_cidr_blocks   = var.allowed_cidr_blocks
     services              = local.service_names
     security_controls = {
-      tls_required             = var.environment != "local"
+      tls_required              = var.environment != "local"
       public_ingress_restricted = !var.enable_public_ingress || length(var.allowed_cidr_blocks) > 0
       container_scanning        = true
       release_gates_required    = true

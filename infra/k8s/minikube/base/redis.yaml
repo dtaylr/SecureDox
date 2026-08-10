@@ -11,9 +11,15 @@ spec:
     metadata:
       labels: { app: redis }
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: redis
-          image: redis:7-alpine
+          image: docker.io/library/redis:7-alpine
           args: ["redis-server", "--appendonly", "yes"]
           ports:
             - containerPort: 6379
@@ -27,6 +33,20 @@ spec:
               command: ["redis-cli", "ping"]
             initialDelaySeconds: 20
             periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: redis-data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

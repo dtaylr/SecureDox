@@ -31,7 +31,8 @@ repos:
     rev: v8.21.2
     hooks:
       - id: gitleaks
-        args: ["protect", "--staged", "--config", "security/gitleaks/gitleaks.toml"]
+        args:
+          ["protect", "--staged", "--config", "security/gitleaks/gitleaks.toml"]
 
   # --- python --------------------------------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -46,7 +47,8 @@ repos:
     hooks:
       - id: mypy
         files: ^(apps/(api|worker)|packages/.*/python)/
-        additional_dependencies: [pydantic>=2.9, sqlalchemy[mypy]>=2.0, types-redis]
+        additional_dependencies:
+          ["pydantic>=2.9", "sqlalchemy[mypy]>=2.0", "types-redis"]
 
   # --- javascript / typescript --------------------------------------------
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -81,6 +83,11 @@ repos:
     rev: v1.99.0
     hooks:
       - id: semgrep
+        # Python 3.12+ venvs no longer bundle setuptools, and semgrep's
+        # opentelemetry-instrumentation dependency still imports pkg_resources.
+        # pkg_resources was removed in setuptools 82, so the pin must stay below it.
+        additional_dependencies:
+          - "setuptools<82"
         args:
           - "--config=security/semgrep/rules.yml"
           - "--config=p/owasp-top-ten"

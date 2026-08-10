@@ -15,14 +15,19 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: web
-          image: securedox/web:local
+          image: docker.io/securedox/web:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:
-            - { name: VITE_API_BASE_URL, value: http://securedox.local }
+            - { name: VITE_API_BASE_URL, value: "http://securedox.local" }
+            - { name: HOME, value: /tmp }
+            - { name: NPM_CONFIG_CACHE, value: /tmp/npm-cache }
+          command: ["npm"]
+          args: ["run", "dev", "--", "--cacheDir", "/tmp/vite-cache"]
           readinessProbe:
             httpGet: { path: /, port: 3000 }
             initialDelaySeconds: 10
@@ -36,7 +41,14 @@ spec:
             limits: { cpu: 250m, memory: 256Mi }
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

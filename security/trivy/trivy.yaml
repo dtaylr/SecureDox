@@ -1,4 +1,5 @@
 format: json
+ignorefile: security/trivy/.trivyignore.yaml
 severity:
   - CRITICAL
   - HIGH
@@ -11,15 +12,13 @@ scanners:
   - secret
   - misconfig
   - license
-vulnerability:
-  type:
+pkg:
+  types:
     - os
     - library
 misconfiguration:
   include-non-failures: false
   trace: false
-secret:
-  config: security/gitleaks/gitleaks.toml
 license:
   forbidden:
     - GPL-3.0

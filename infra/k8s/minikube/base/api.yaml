@@ -18,9 +18,10 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: api
-          image: securedox/api:local
+          image: docker.io/securedox/api:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -40,7 +41,18 @@ spec:
             limits: { cpu: 500m, memory: 512Mi }
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: document-storage
+              mountPath: /var/lib/securedox/storage
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: document-storage
+          persistentVolumeClaim: { claimName: securedox-document-storage }
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

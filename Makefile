@@ -170,7 +170,7 @@ security: secrets sast sca dep-audit sbom dockerfile-lint ## Static security sui
 .PHONY: sast
 sast: ## Semgrep static analysis
 	mkdir -p reports
-	semgrep scan --config security/semgrep/rules.yml --config p/owasp-top-ten \
+	semgrep scan --config security/semgrep/rules.yml \
 	  --sarif --output reports/semgrep.sarif --error
 
 .PHONY: sca

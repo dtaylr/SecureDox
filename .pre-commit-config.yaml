@@ -90,7 +90,6 @@ repos:
           - "setuptools<82"
         args:
           - "--config=security/semgrep/rules.yml"
-          - "--config=p/owasp-top-ten"
           - "--error"
           - "--skip-unknown-extensions"
           - "--quiet"

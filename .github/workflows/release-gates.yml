@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - uses: actions/setup-python@v5
         with:
@@ -101,6 +101,9 @@ jobs:
         with:
           name: release-readiness
           path: |
+            reports/
             reports/release-readiness.json
             reports/release-readiness.prom
+            tests/reports/
+            security/sbom/
           if-no-files-found: error

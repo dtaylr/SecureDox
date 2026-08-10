@@ -32,6 +32,8 @@ const cases: ContractCase[] = [
   },
 ];
 
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }

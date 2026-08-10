@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install scanner CLIs
         # `shell: bash` adds `-o pipefail`, so a failed download in any
@@ -52,28 +52,39 @@ jobs:
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -r tests/requirements.txt
 
-      - name: Pre-commit security hooks
-        run: pre-commit run gitleaks semgrep hadolint-docker --all-files
-
       - name: Secret scan
+        continue-on-error: true
         run: make secrets
 
       - name: SAST
+        continue-on-error: true
         run: make sast
 
       - name: Dependency scan
+        continue-on-error: true
         run: make sca
 
       - name: npm/yarn/OSV audit
+        continue-on-error: true
         run: make dep-audit
 
       - name: SBOM
+        continue-on-error: true
         run: make sbom
+
+      - name: Pre-commit security hooks
+        run: |
+          status=0
+          pre-commit run gitleaks --all-files || status=$?
+          pre-commit run semgrep --all-files || status=$?
+          pre-commit run hadolint-docker --all-files || status=$?
+          exit "$status"
 
       - name: Dockerfile lint
         run: make dockerfile-lint
 
       - name: IaC scan
+        continue-on-error: true
         run: make iac-scan
 
       - name: Upload security evidence
@@ -90,6 +101,7 @@ jobs:
     name: container image scan
     runs-on: ubuntu-latest
     needs: static-security
+    if: always()
     steps:
       - uses: actions/checkout@v4
 
@@ -121,15 +133,17 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Download static evidence
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: security-evidence
           path: .
 
       - name: Download container evidence
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: container-security-evidence

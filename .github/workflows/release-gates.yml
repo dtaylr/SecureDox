@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - uses: actions/setup-python@v5
         with:
@@ -31,21 +31,62 @@ jobs:
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -r tests/requirements.txt
 
-      - name: Generate available quality evidence
-        continue-on-error: true
+      - name: Install scanner and browser CLIs
         run: |
-          mkdir -p reports tests/reports
-          .venv/bin/python -m pytest tests/api -v --junitxml=reports/junit-api.xml
-          .venv/bin/python -m pytest tests/db -v --junitxml=reports/junit-db.xml
-          .venv/bin/python -m pytest tests/security -v --junitxml=reports/junit-security.xml
-          .venv/bin/python -m pytest tests/ocr -v --junitxml=reports/junit-ocr.xml
-          .venv/bin/python -m pytest tests/observability -v --junitxml=reports/junit-observability.xml
-          yarn test:contract
-          yarn test:mcp
-          yarn test:agents
+          python -m pip install semgrep
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          yarn workspace @securedox/e2e-tests playwright install --with-deps chromium
+
+      - name: Prepare local stack
+        run: cp .env.example .env
+
+      - name: Generate release evidence
+        run: |
+          set +e
+          mkdir -p reports tests/reports security/sbom
+
+          run_evidence() {
+            echo "::group::$*"
+            "$@"
+            code=$?
+            echo "::endgroup::"
+            if [ "$code" -ne 0 ]; then
+              echo "::warning title=Evidence command failed::$* exited with $code"
+            fi
+            return 0
+          }
+
+          run_evidence docker compose -f infra/docker/docker-compose.yml --env-file .env up -d --build --wait postgres redis api worker web nginx
+          run_evidence .venv/bin/python -m pytest tests/api -v --junitxml=reports/junit-api.xml
+          run_evidence .venv/bin/python -m pytest tests/db -v --junitxml=reports/junit-db.xml
+          run_evidence .venv/bin/python -m pytest tests/security -v --junitxml=reports/junit-security.xml
+          run_evidence .venv/bin/python -m pytest tests/ocr -v --junitxml=reports/junit-ocr.xml
+          run_evidence .venv/bin/python -m pytest tests/observability -v --junitxml=reports/junit-observability.xml
+          run_evidence yarn test:contract
+          run_evidence yarn test:e2e
+          run_evidence yarn test:security
+          run_evidence yarn check:flake
+          run_evidence yarn test:mcp
+          run_evidence yarn test:agents
+          run_evidence make secrets
+          run_evidence make sast
+          run_evidence make sca
+          run_evidence make sbom
+          run_evidence make image-scan
 
       - name: Generate release readiness summary
         run: yarn gate:release
+
+      - name: Collect stack logs
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.yml --env-file .env logs --no-color > reports/docker-compose.log || true
+
+      - name: Stop local stack
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.yml --env-file .env down -v --remove-orphans
 
       - name: Upload release summary
         if: always()
@@ -53,6 +94,9 @@ jobs:
         with:
           name: release-readiness
           path: |
+            reports/
             reports/release-readiness.json
             reports/release-readiness.prom
+            tests/reports/
+            security/sbom/
           if-no-files-found: error

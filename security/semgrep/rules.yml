@@ -18,24 +18,24 @@ rules:
     severity: WARNING
     languages: [python]
     patterns:
-      - pattern: $NAME: str = "$VALUE"
+      - pattern: '$NAME: str = "$VALUE"'
       - metavariable-regex:
           metavariable: $NAME
           regex: (?i).*(secret|token|password|api_key).*
       - metavariable-regex:
           metavariable: $VALUE
-          regex: ^(?!local-dev-only-not-a-real-secret|securedox-demo).*$
+          regex: ^(?!(|local-dev-only-not-a-real-secret|securedox-demo|bearer)$).+$
 
   - id: securedox-ts-no-dangerously-set-inner-html
     message: Do not render untrusted HTML in the web app.
     severity: ERROR
-    languages: [typescript, tsx]
+    languages: [typescript]
     pattern: dangerouslySetInnerHTML={...}
 
   - id: securedox-ts-no-localstorage-token
     message: Do not persist auth tokens in localStorage.
     severity: WARNING
-    languages: [typescript, tsx]
+    languages: [typescript]
     pattern-either:
       - pattern: localStorage.setItem(..., $TOKEN)
       - pattern: window.localStorage.setItem(..., $TOKEN)

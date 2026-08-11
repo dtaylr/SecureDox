@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   name: redis
   namespace: securedox
+  annotations:
+    checkov.io/skip1: CKV_K8S_15=Minikube uses local stack images with IfNotPresent.
+    checkov.io/skip2: CKV_K8S_40=The official Redis image runs as its packaged non-root redis UID.
+    checkov.io/skip3: CKV_K8S_43=The local minikube stack uses version tags rather than digest pins.
 spec:
   replicas: 1
   selector:
@@ -11,6 +15,13 @@ spec:
     metadata:
       labels: { app: redis }
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
+      automountServiceAccountToken: false
       containers:
         - name: redis
           image: redis:7-alpine
@@ -27,6 +38,19 @@ spec:
               command: ["redis-cli", "ping"]
             initialDelaySeconds: 20
             periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 250m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - { name: redis-data, mountPath: /data }
+            - { name: redis-tmp, mountPath: /tmp }
+      volumes:
+        - { name: redis-data, emptyDir: {} }
+        - { name: redis-tmp, emptyDir: {} }
 ---
 apiVersion: v1
 kind: Service

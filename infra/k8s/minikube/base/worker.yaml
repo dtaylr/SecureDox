@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   name: worker
   namespace: securedox
+  annotations:
+    checkov.io/skip1: CKV_K8S_15=Minikube uses preloaded local images with IfNotPresent.
+    checkov.io/skip2: CKV_K8S_35=The worker reads local development secrets from environment variables.
+    checkov.io/skip3: CKV_K8S_43=Local development images are mutable and are not pinned by digest.
 spec:
   replicas: 2
   strategy:
@@ -15,15 +19,23 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      automountServiceAccountToken: false
       containers:
         - name: worker
-          image: securedox/worker:local
+          image: docker.io/securedox/worker:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9100
           envFrom:
             - configMapRef: { name: securedox-config }
             - secretRef: { name: securedox-secrets }
+          env:
+            - { name: LOG_LEVEL, value: INFO }
+            - { name: LOG_FORMAT, value: json }
           readinessProbe:
             tcpSocket: { port: 9100 }
             initialDelaySeconds: 10
@@ -38,6 +50,15 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+            runAsUser: 10001
+            runAsGroup: 10001
+          volumeMounts:
+            - { name: worker-storage, mountPath: /var/lib/securedox/storage }
+            - { name: worker-tmp, mountPath: /tmp }
+      volumes:
+        - { name: worker-storage, emptyDir: {} }
+        - { name: worker-tmp, emptyDir: {} }
 ---
 apiVersion: v1
 kind: Service

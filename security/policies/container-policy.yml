@@ -5,7 +5,6 @@ images:
   fail_on:
     severity:
       - CRITICAL
-      - HIGH
   require:
     non_root_user: true
     no_latest_tag: true

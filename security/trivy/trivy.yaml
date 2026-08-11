@@ -11,8 +11,8 @@ scanners:
   - secret
   - misconfig
   - license
-vulnerability:
-  type:
+pkg:
+  types:
     - os
     - library
 misconfiguration:

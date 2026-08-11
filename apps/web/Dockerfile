@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 ENV NODE_ENV=development
 
@@ -10,7 +10,8 @@ COPY tsconfig.base.json tsconfig.base.json
 
 WORKDIR /app/apps/web
 
-RUN npm install \
+RUN npm install -g npm@12.0.2 \
+    && npm install \
     && npm cache clean --force \
     && chown -R node:node /app
 

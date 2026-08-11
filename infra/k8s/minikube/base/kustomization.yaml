@@ -6,6 +6,7 @@ resources:
   - secret.example.yaml
   - postgres.yaml
   - redis.yaml
+  - networkpolicy.yaml
   - api.yaml
   - worker.yaml
   - web.yaml

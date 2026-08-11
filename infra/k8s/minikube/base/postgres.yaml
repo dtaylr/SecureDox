@@ -3,6 +3,11 @@ kind: Deployment
 metadata:
   name: postgres
   namespace: securedox
+  annotations:
+    checkov.io/skip1: CKV_K8S_15=Minikube uses local stack images with IfNotPresent.
+    checkov.io/skip2: CKV_K8S_35=Postgres consumes the local development password through its documented env var.
+    checkov.io/skip3: CKV_K8S_40=The official Postgres image runs as its packaged non-root postgres UID.
+    checkov.io/skip4: CKV_K8S_43=The local minikube stack uses version tags rather than digest pins.
 spec:
   replicas: 1
   selector:
@@ -11,6 +16,13 @@ spec:
     metadata:
       labels: { app: postgres }
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
+      automountServiceAccountToken: false
       containers:
         - name: postgres
           image: postgres:16-alpine
@@ -34,6 +46,21 @@ spec:
               command: ["pg_isready", "-U", "securedox", "-d", "securedox"]
             initialDelaySeconds: 20
             periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - { name: postgres-data, mountPath: /var/lib/postgresql/data }
+            - { name: postgres-run, mountPath: /var/run/postgresql }
+            - { name: postgres-tmp, mountPath: /tmp }
+      volumes:
+        - { name: postgres-data, emptyDir: {} }
+        - { name: postgres-run, emptyDir: {} }
+        - { name: postgres-tmp, emptyDir: {} }
 ---
 apiVersion: v1
 kind: Service

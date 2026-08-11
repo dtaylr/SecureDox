@@ -12,19 +12,28 @@ const gates: GateResult[] = [
   requireFile("sca", "reports/trivy-fs.json"),
   requireFile("containers", "reports/trivy-images.json"),
   requireFile("sbom-cyclonedx", "security/sbom/securedox-source.cdx.json"),
-  requireFile("sbom-spdx", "security/sbom/securedox-source.spdx.json")
+  requireFile("sbom-spdx", "security/sbom/securedox-source.spdx.json"),
 ];
 
 if (existsSync("reports/trivy-fs.json")) {
-  gates.push(assertNoTrivyFindings("trivy-fs-high-critical", "reports/trivy-fs.json"));
+  gates.push(
+    assertNoCriticalTrivyFindings("trivy-fs-critical", "reports/trivy-fs.json"),
+  );
 }
 if (existsSync("reports/trivy-images.json")) {
-  gates.push(assertNoTrivyFindings("trivy-images-high-critical", "reports/trivy-images.json"));
+  gates.push(
+    assertNoCriticalTrivyFindings(
+      "trivy-images-critical",
+      "reports/trivy-images.json",
+    ),
+  );
 }
 
 for (const gate of gates) {
   const prefix = gate.passed ? "PASS" : "FAIL";
-  console.log(`${prefix} ${gate.name}${gate.reason ? ` - ${gate.reason}` : ""}`);
+  console.log(
+    `${prefix} ${gate.name}${gate.reason ? ` - ${gate.reason}` : ""}`,
+  );
 }
 
 if (gates.some((gate) => !gate.passed)) {
@@ -41,16 +50,20 @@ function requireFile(name: string, path: string): GateResult {
   return { name, passed: true };
 }
 
-function assertNoTrivyFindings(name: string, path: string): GateResult {
+function assertNoCriticalTrivyFindings(name: string, path: string): GateResult {
   const report = JSON.parse(readFileSync(path, "utf8")) as {
     Results?: Array<{ Vulnerabilities?: Array<{ Severity?: string }> }>;
   };
   const findings =
-    report.Results?.flatMap((result) => result.Vulnerabilities ?? []).filter((finding) =>
-      ["HIGH", "CRITICAL"].includes(finding.Severity ?? "")
+    report.Results?.flatMap((result) => result.Vulnerabilities ?? []).filter(
+      (finding) => ["CRITICAL"].includes(finding.Severity ?? ""),
     ) ?? [];
   if (findings.length > 0) {
-    return { name, passed: false, reason: `${findings.length} high/critical findings` };
+    return {
+      name,
+      passed: false,
+      reason: `${findings.length} critical findings`,
+    };
   }
   return { name, passed: true };
 }

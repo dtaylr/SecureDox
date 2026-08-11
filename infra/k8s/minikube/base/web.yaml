@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: web
   namespace: securedox
+  annotations:
+    checkov.io/skip1: CKV_K8S_15=Minikube uses preloaded local images with IfNotPresent.
+    checkov.io/skip2: CKV_K8S_43=Local development images are mutable and are not pinned by digest.
 spec:
   replicas: 1
   strategy:
@@ -15,9 +18,14 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      automountServiceAccountToken: false
       containers:
         - name: web
-          image: securedox/web:local
+          image: docker.io/securedox/web:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -37,6 +45,15 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+            runAsUser: 10001
+            runAsGroup: 10001
+          volumeMounts:
+            - { name: web-vite-cache, mountPath: /app/apps/web/node_modules/.vite }
+            - { name: web-tmp, mountPath: /tmp }
+      volumes:
+        - { name: web-vite-cache, emptyDir: {} }
+        - { name: web-tmp, emptyDir: {} }
 ---
 apiVersion: v1
 kind: Service

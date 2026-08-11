@@ -5,10 +5,6 @@ metadata:
   namespace: securedox
 data:
   SECUREDOX_ENV: local
-  LOG_LEVEL: INFO
-  LOG_FORMAT: json
-  DATABASE_URL: postgresql+asyncpg://securedox:securedox_local_pw@postgres:5432/securedox
-  DATABASE_URL_SYNC: postgresql+psycopg://securedox:securedox_local_pw@postgres:5432/securedox
   REDIS_URL: redis://redis:6379/0
   QUEUE_NAME: securedox:intake
   STORAGE_BACKEND: local

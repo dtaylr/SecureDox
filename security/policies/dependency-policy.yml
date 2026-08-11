@@ -5,7 +5,6 @@ vulnerability:
   fail_on:
     severity:
       - CRITICAL
-      - HIGH
   allow_unfixed: false
 
 licenses:

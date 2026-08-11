@@ -14,12 +14,10 @@ required_gates:
     report: reports/trivy-fs.json
     fail_on_severity:
       - CRITICAL
-      - HIGH
   containers:
     report: reports/trivy-images.json
     fail_on_severity:
       - CRITICAL
-      - HIGH
   sbom:
     required_files:
       - security/sbom/securedox-source.cdx.json

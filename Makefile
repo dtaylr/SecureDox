@@ -170,7 +170,8 @@ security: secrets sast sca dep-audit sbom dockerfile-lint ## Static security sui
 .PHONY: sast
 sast: ## Semgrep static analysis
 	mkdir -p reports
-	semgrep scan --config security/semgrep/rules.yml --config p/owasp-top-ten \
+	mkdir -p /tmp/securedox-semgrep-config /tmp/securedox-semgrep-cache
+	XDG_CONFIG_HOME=/tmp/securedox-semgrep-config XDG_CACHE_HOME=/tmp/securedox-semgrep-cache SEMGREP_LOG_FILE=/tmp/securedox-semgrep.log SSL_CERT_FILE=$$($(PY) -c 'import certifi; print(certifi.where())') semgrep scan --config security/semgrep/rules.yml --config p/owasp-top-ten \
 	  --sarif --output reports/semgrep.sarif --error
 
 .PHONY: sca
@@ -196,13 +197,13 @@ sbom: ## Generate CycloneDX SBOMs for every artifact
 .PHONY: iac-scan
 iac-scan: ## Terraform / Dockerfile / K8s misconfiguration scan
 	mkdir -p reports
-	trivy config --config security/trivy/trivy.yaml --format json \
+	trivy config --config security/trivy/trivy.yaml --config-data security/trivy/config-data --format json \
 	  --output reports/trivy-config.json infra/
 
 .PHONY: checkov
 checkov: ## Checkov scan for Terraform/Kubernetes/Compose/Ansible
 	mkdir -p reports
-	checkov -d infra --quiet --output json --output-file-path reports/checkov.json
+	checkov -d infra --framework kubernetes,terraform,dockerfile,ansible --quiet --output json --output-file-path reports/checkov.json
 
 .PHONY: terraform-fmt
 terraform-fmt: ## Check Terraform formatting
@@ -217,8 +218,8 @@ terraform-validate: ## Validate local and staging Terraform modules
 
 .PHONY: ansible-check
 ansible-check: ## Ansible syntax checks
-	ansible-playbook -i infra/ansible/inventories/local.ini infra/ansible/playbooks/site.yml --syntax-check
-	ansible-playbook -i infra/ansible/inventories/local.ini infra/ansible/playbooks/check.yml --syntax-check
+	ANSIBLE_HOME=/tmp/securedox-ansible-home ANSIBLE_LOCAL_TEMP=/tmp/securedox-ansible-tmp ANSIBLE_CONFIG=infra/ansible/ansible.cfg ansible-playbook -i infra/ansible/inventories/local.ini infra/ansible/playbooks/site.yml --syntax-check
+	ANSIBLE_HOME=/tmp/securedox-ansible-home ANSIBLE_LOCAL_TEMP=/tmp/securedox-ansible-tmp ANSIBLE_CONFIG=infra/ansible/ansible.cfg ansible-playbook -i infra/ansible/inventories/local.ini infra/ansible/playbooks/check.yml --syntax-check
 
 .PHONY: kube-validate
 kube-validate: ## Kubernetes client-side manifest validation

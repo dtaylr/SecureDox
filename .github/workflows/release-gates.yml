@@ -94,13 +94,26 @@ jobs:
           python-version: "3.12"
 
       - name: Install scanner CLIs
+        env:
+          # Keep in step with security-gates.yml: the release scorecard reads
+          # the same reports, so the two workflows must run the same scanners.
+          GITLEAKS_VERSION: "8.30.1"
+          SYFT_VERSION: "v1.51.0"
+          TRIVY_VERSION: "v0.70.0"
         run: |
-          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh -o /tmp/install-gitleaks.sh
-          sh /tmp/install-gitleaks.sh -b /usr/local/bin
+          set -euo pipefail
+          # gitleaks removed install.sh from the repo; master/ and main/ both
+          # 404. Fetch the pinned release tarball instead.
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+          chmod +x /usr/local/bin/gitleaks
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh -o /tmp/install-syft.sh
-          sh /tmp/install-syft.sh -b /usr/local/bin
+          sh /tmp/install-syft.sh -b /usr/local/bin "${SYFT_VERSION}"
           curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh -o /tmp/install-trivy.sh
-          sh /tmp/install-trivy.sh -b /usr/local/bin
+          sh /tmp/install-trivy.sh -b /usr/local/bin "${TRIVY_VERSION}"
+          gitleaks version
+          syft version
+          trivy --version
 
       - name: Install dependencies
         run: |
@@ -112,7 +125,9 @@ jobs:
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -r tests/requirements.txt
           # make sast resolves the CA bundle through the venv interpreter.
-          .venv/bin/pip install semgrep certifi
+          # Semgrep is pinned to match security-gates.yml — an unpinned bump
+          # can add rules and turn a clean commit into a SAST blocker.
+          .venv/bin/pip install "semgrep==1.172.0" certifi
 
       - name: Static security evidence
         run: |

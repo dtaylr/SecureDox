@@ -26,8 +26,13 @@ jobs:
 
       - name: Install tools
         run: |
+          mkdir -p reports
           python -m pip install --upgrade pip
-          python -m pip install checkov ansible pytest pyyaml
+          python -m pip install checkov ansible pyyaml
+          # tests/requirements.txt pins pytest plus the plugins the root
+          # pyproject requires (asyncio_mode is rejected under --strict-config
+          # without pytest-asyncio) and the deps tests/conftest.py imports.
+          python -m pip install -r tests/requirements.txt
           ansible-galaxy collection install -r infra/ansible/requirements.yml
           curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh -o /tmp/install-trivy.sh
           sh /tmp/install-trivy.sh -b /usr/local/bin

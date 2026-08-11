@@ -40,6 +40,11 @@ jobs:
 
       - name: Install project dependencies
         run: |
+          # Scan steps below assume these exist; creating them here means a
+          # scan that fails part-way still leaves the evidence written by the
+          # steps that did run, so the always() upload publishes partial
+          # evidence and the policy job reports precisely what is missing.
+          mkdir -p reports security/sbom
           yarn install --frozen-lockfile || yarn install
           python -m venv .venv
           .venv/bin/pip install --upgrade pip
@@ -82,7 +87,10 @@ jobs:
   container-security:
     name: container image scan
     runs-on: ubuntu-latest
-    needs: static-security
+    # Deliberately independent of static-security: the two scans share no
+    # inputs, and chaining them meant one static failure skipped this job,
+    # so its artifact never existed and release-security-policy died on
+    # download-artifact instead of reporting a gate result.
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
@@ -117,13 +125,20 @@ jobs:
         with:
           node-version: "24"
 
+      # Both downloads tolerate a missing artifact on purpose. An upstream job
+      # that failed before writing evidence publishes nothing, and a hard
+      # download error hides the actual result behind "Artifact not found".
+      # Letting the gate run instead turns that into an explicit
+      # "FAIL <gate> - <path> is missing" line.
       - name: Download static evidence
+        continue-on-error: true
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: security-evidence
           path: .
 
       - name: Download container evidence
+        continue-on-error: true
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: container-security-evidence

@@ -66,6 +66,13 @@ async def seed() -> None:
             session.add(Tenant(id=tenant_id, name=name))
             created += 1
 
+        if created:
+            # Documents and audit entries below carry a raw tenant_id FK with no
+            # ORM relationship back to Tenant, so the unit of work has no mapper
+            # dependency to order the inserts by and would emit the document
+            # INSERT first. Flushing here guarantees the parent rows exist.
+            await session.flush()
+
         storage_key = f"acme-lending/seed/{DEMO_DOCUMENT_ID}.pdf"
         await storage.put(storage_key, DEMO_CONTENT)
 

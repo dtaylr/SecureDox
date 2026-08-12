@@ -46,7 +46,10 @@ repos:
     hooks:
       - id: mypy
         files: ^(apps/(api|worker)|packages/.*/python)/
-        additional_dependencies: [pydantic>=2.9, sqlalchemy[mypy]>=2.0, types-redis]
+        # Quoted: inside a flow sequence a plain scalar may not contain "[",
+        # so the sqlalchemy extra made the whole config unparseable.
+        additional_dependencies:
+          ["pydantic>=2.9", "sqlalchemy[mypy]>=2.0", "types-redis"]
 
   # --- javascript / typescript --------------------------------------------
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -78,7 +81,12 @@ repos:
 
   # --- static application security testing ---------------------------------
   - repo: https://github.com/semgrep/semgrep
-    rev: v1.99.0
+    # Matches the semgrep pinned in .github/workflows/*.yml. v1.99.0 pulled an
+    # opentelemetry release that imports pkg_resources, which Python 3.12 venvs
+    # no longer provide, so the hook raised ModuleNotFoundError before scanning
+    # anything. Keeping hook and CLI on one version also stops the two SAST
+    # paths from disagreeing about what counts as a blocker.
+    rev: v1.172.0
     hooks:
       - id: semgrep
         args:

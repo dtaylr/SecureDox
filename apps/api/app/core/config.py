@@ -7,11 +7,12 @@ real values through Terraform-managed secrets.
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, PostgresDsn, RedisDsn, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 Environment = Literal["local", "ci", "staging", "production"]
 OcrProvider = Literal["mock", "tesseract", "vendor"]
@@ -46,7 +47,12 @@ class Settings(BaseSettings):
     # --- http ---
     api_host: str = "0.0.0.0"  # noqa: S104 — bound inside a container network
     api_port: int = 8000
-    api_cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    # NoDecode: pydantic-settings JSON-decodes complex fields inside the env
+    # source, before any field_validator runs, so a plain comma-separated
+    # value raised SettingsError instead of reaching _split_csv below.
+    api_cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:3000"]
+    )
     request_timeout_seconds: int = 30
 
     # --- auth ---
@@ -59,7 +65,7 @@ class Settings(BaseSettings):
     storage_backend: Literal["local", "s3"] = "local"
     storage_local_path: str = "/var/lib/securedox/storage"
     max_upload_bytes: int = 10 * 1024 * 1024
-    allowed_mime_types: list[str] = Field(
+    allowed_mime_types: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
             "application/pdf",
             "image/png",
@@ -79,9 +85,14 @@ class Settings(BaseSettings):
     @classmethod
     def _split_csv(cls, value: object) -> object:
         """Accept both a JSON list and a plain comma-separated env string."""
-        if isinstance(value, str) and not value.strip().startswith("["):
-            return [item.strip() for item in value.split(",") if item.strip()]
-        return value
+        if not isinstance(value, str):
+            return value
+        raw = value.strip()
+        if raw.startswith("["):
+            # These fields opt out of the env source's decoding, so a JSON
+            # list arrives here as a string and has to be parsed explicitly.
+            return json.loads(raw)
+        return [item.strip() for item in raw.split(",") if item.strip()]
 
     @property
     def is_production(self) -> bool:

@@ -9,9 +9,22 @@ on:
 permissions:
   contents: read
 
+# The release scorecard needs three classes of evidence: static security scans,
+# suites that only produce results against a running stack, and the JS gate
+# runner. Artifacts do not cross workflow runs, so anything gate:release reads
+# has to be produced inside this workflow.
+#
+# Pull requests run the advisory lane: the suites that work without the stack,
+# plus gate:release --no-fail, so a PR gets the scorecard as feedback without
+# being blocked on evidence it structurally cannot produce.
+#
+# main and manual dispatch run the strict lane: scans, the docker compose
+# stack, the full suite set, and a blocking gate:release.
+
 jobs:
-  release-readiness:
-    name: release readiness
+  advisory-readiness:
+    name: release readiness (advisory)
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -32,10 +45,110 @@ jobs:
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -r tests/requirements.txt
 
-      - name: Generate available quality evidence
+      - name: Generate stack-independent evidence
         continue-on-error: true
         run: |
-          mkdir -p reports tests/reports
+          status=0
+          run_evidence() {
+            "$@" || status=$?
+          }
+          # These suites skip cleanly when the API is absent, so they still
+          # emit JUnit XML that records what was collected.
+          run_evidence .venv/bin/python -m pytest tests/api -v --junitxml=reports/junit-api.xml
+          run_evidence .venv/bin/python -m pytest tests/db -v --junitxml=reports/junit-db.xml
+          run_evidence .venv/bin/python -m pytest tests/security -v --junitxml=reports/junit-security.xml
+          run_evidence .venv/bin/python -m pytest tests/ocr -v --junitxml=reports/junit-ocr.xml
+          run_evidence .venv/bin/python -m pytest tests/observability -v --junitxml=reports/junit-observability.xml
+          run_evidence .venv/bin/python -m pytest tests/architecture -v --junitxml=reports/junit-architecture.xml
+          run_evidence yarn test:mcp
+          run_evidence yarn test:agents
+          exit "$status"
+
+      - name: Release readiness scorecard (advisory)
+        run: yarn gate:release --no-fail
+
+      - name: Upload advisory summary
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: release-readiness-advisory
+          path: |
+            reports/
+            tests/reports/
+          if-no-files-found: warn
+
+  release-readiness:
+    name: release readiness
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - name: Install scanner CLIs
+        env:
+          # Keep in step with security-gates.yml: the release scorecard reads
+          # the same reports, so the two workflows must run the same scanners.
+          GITLEAKS_VERSION: "8.30.1"
+          SYFT_VERSION: "v1.51.0"
+          TRIVY_VERSION: "v0.70.0"
+        run: |
+          set -euo pipefail
+          # gitleaks removed install.sh from the repo; master/ and main/ both
+          # 404. Fetch the pinned release tarball instead.
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+          chmod +x /usr/local/bin/gitleaks
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh -o /tmp/install-syft.sh
+          sh /tmp/install-syft.sh -b /usr/local/bin "${SYFT_VERSION}"
+          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh -o /tmp/install-trivy.sh
+          sh /tmp/install-trivy.sh -b /usr/local/bin "${TRIVY_VERSION}"
+          gitleaks version
+          syft version
+          trivy --version
+
+      - name: Install dependencies
+        run: |
+          mkdir -p reports tests/reports security/sbom
+          cp .env.example .env
+          yarn install --frozen-lockfile || yarn install
+          npx playwright install --with-deps chromium
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -r tests/requirements.txt
+          # make sast resolves the CA bundle through the venv interpreter.
+          # Semgrep is pinned to match security-gates.yml — an unpinned bump
+          # can add rules and turn a clean commit into a SAST blocker.
+          .venv/bin/pip install "semgrep==1.172.0" certifi
+
+      - name: Static security evidence
+        run: |
+          make secrets
+          make sast
+          make sca
+          make sbom
+
+      - name: Container image evidence
+        run: make image-scan
+
+      - name: Start stack
+        run: |
+          docker compose -f infra/docker/docker-compose.yml --env-file .env \
+            up -d --build --wait postgres redis api worker web nginx
+          make migrate
+          make seed
+
+      - name: Generate quality evidence
+        continue-on-error: true
+        run: |
           status=0
           run_evidence() {
             "$@" || status=$?
@@ -48,10 +161,20 @@ jobs:
           run_evidence yarn test:contract
           run_evidence yarn test:mcp
           run_evidence yarn test:agents
+          run_evidence yarn test:e2e
+          run_evidence yarn test:security
           exit "$status"
 
-      - name: Generate release readiness summary
+      - name: Release readiness scorecard
         run: yarn gate:release
+
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose -f infra/docker/docker-compose.yml --env-file .env logs --tail=200
+
+      - name: Stop stack
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.yml --env-file .env down -v --remove-orphans
 
       - name: Upload release summary
         if: always()
@@ -60,8 +183,6 @@ jobs:
           name: release-readiness
           path: |
             reports/
-            reports/release-readiness.json
-            reports/release-readiness.prom
             tests/reports/
             security/sbom/
           if-no-files-found: warn

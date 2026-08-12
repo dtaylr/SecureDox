@@ -98,7 +98,14 @@ jobs:
       # check without letting it abort the job before the scans produce the
       # artifact the policy gate depends on.
       - name: Pre-commit security hooks
-        run: pre-commit run gitleaks semgrep hadolint-docker --all-files
+        run: |
+          set -euo pipefail
+          # "pre-commit run" takes a single hook id; the extra ids were parsed
+          # as unknown arguments and the step exited 2 without running anything.
+          pre-commit validate-config .pre-commit-config.yaml
+          pre-commit run gitleaks --all-files
+          pre-commit run semgrep --all-files
+          pre-commit run hadolint-docker --all-files
 
       - name: Upload security evidence
         if: always()
